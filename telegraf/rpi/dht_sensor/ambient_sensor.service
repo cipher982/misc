@@ -1,0 +1,11 @@
+[Unit]
+Description=Read ambient temp/humid and log to telegraf
+After=multi-user.target
+
+[Service]
+Type=simple
+Restart=always
+ExecStart=/usr/bin/python3 /home/pi/git/misc/telegraf/rpi/dht_sensor/test.py
+
+[Install]
+WantedBy=multi-user.target
