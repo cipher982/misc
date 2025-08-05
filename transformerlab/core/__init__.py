@@ -2,13 +2,23 @@
 Core transformer components.
 """
 
-from .transformer import Transformer, TransformerBlock
-from .tokenizer import CharTokenizer, load_corpus
-from .normalization import LayerNorm, RMSNorm, get_normalization_module
 from .activations import ActivationModule, get_activation_module
-from .positional_encoding import PositionalEncoding, SinusoidalPE, RoPE, ALiBi, get_positional_encoding
-from .attention import MultiHeadAttention, scaled_dot_product_attention, create_causal_mask
+from .attention import (
+    MultiHeadAttention,
+    create_causal_mask,
+    scaled_dot_product_attention,
+)
 from .feed_forward import FeedForward, get_residual_type
+from .normalization import LayerNorm, RMSNorm, get_normalization_module
+from .positional_encoding import (
+    ALiBi,
+    PositionalEncoding,
+    RoPE,
+    SinusoidalPE,
+    get_positional_encoding,
+)
+from .tokenizer import CharTokenizer, load_corpus
+from .transformer import Transformer, TransformerBlock
 
 __all__ = [
     "Transformer",
@@ -16,7 +26,7 @@ __all__ = [
     "CharTokenizer",
     "load_corpus",
     "LayerNorm",
-    "RMSNorm", 
+    "RMSNorm",
     "get_normalization_module",
     "ActivationModule",
     "get_activation_module",
@@ -29,5 +39,5 @@ __all__ = [
     "scaled_dot_product_attention",
     "create_causal_mask",
     "FeedForward",
-    "get_residual_type"
+    "get_residual_type",
 ]

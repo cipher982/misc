@@ -8,229 +8,230 @@ A hands-on environment where you can poke every layer-norm, activation, and posi
 
 Give Python-savvy, math-averse developers a hands-on environment where they can see how architectural tweaks change signal statistics, training stability, and generated text. The Lab feels like a physics sandbox, not a black-box model zoo.
 
-## ✨ Features
-
-### 🏗️ **Modular Architecture**
-- **Normalization**: LayerNorm, RMSNorm, or None
-- **Residual Connections**: Pre-LN, Post-LN, Sandwich
-- **Activation Functions**: ReLU, GeLU, Swish, SwiGLU
-- **Positional Encoding**: Sinusoidal, RoPE, ALiBi
-
-### 📊 **Live Visualization**
-- Real-time loss curves
-- Attention heatmaps
-- Layer statistics across the network
-- Activation distributions
-- Gradient flow analysis
-
-### 🎛️ **Interactive Controls**
-- Adjust model depth (2-12 layers)
-- Tune hidden dimensions (64-512)
-- Configure attention heads (2-16)
-- Set feed-forward dimensions
-- Control training parameters
-
-### 🔬 **Educational Focus**
-- Pure NumPy implementation (no PyTorch/TensorFlow)
-- Transparent code with inline documentation
-- Experiment comparison and saving
-- Text generation with temperature control
-
 ## 🚀 Quick Start
+
+### Prerequisites
+- Python 3.13+
+- [uv](https://docs.astral.sh/uv/) (modern Python package manager)
 
 ### Installation
 
-```bash
-# Clone the repository
-git clone <repository-url>
-cd transformerlab
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/transformerlab/transformerlab.git
+   cd transformerlab
+   ```
 
-# Install dependencies
-pip install -e .
+2. **Install dependencies:**
+   ```bash
+   uv sync
+   ```
+
+3. **Launch the web interface:**
+   ```bash
+   uv run transformerlab web
+   ```
+
+4. **Or use the CLI:**
+   ```bash
+   # Show available commands
+   uv run transformerlab --help
+   
+   # Train a model
+   uv run transformerlab train --layers 4 --steps 100
+   
+   # Generate text
+   uv run transformerlab generate "Hello, world!"
+   
+   # Run demo
+   uv run transformerlab demo
+   ```
+
+## 🎮 Features
+
+### Interactive Web Interface
+- **Real-time training** with live loss curves
+- **Architecture toggles** for normalization, activation, and positional encoding
+- **Attention visualization** with heatmaps
+- **Experiment comparison** with side-by-side metrics
+- **Code inspection** - click any component to see its NumPy implementation
+
+### Command Line Interface
+- **Rich terminal output** with progress bars and tables
+- **Configuration management** with YAML files
+- **Batch training** for multiple experiments
+- **Text generation** with temperature and sampling controls
+
+### Core Components
+- **Tokenizer**: Character-level tokenization with vocabulary management
+- **Normalization**: LayerNorm, RMSNorm, or no normalization
+- **Activations**: ReLU, GeLU, Swish, SwiGLU
+- **Positional Encoding**: Sinusoidal, RoPE, ALiBi
+- **Attention**: Multi-head scaled dot-product attention
+- **Feed-Forward**: Configurable activation and residual connections
+
+## 🏗️ Architecture
+
+### Model Components
+```
+Input → Embeddings → Positional Encoding → Transformer Blocks → Output
+                                    ↓
+Transformer Block: Norm → Attention → Norm → Feed-Forward → Residual
 ```
 
-### Run the Interactive App
+### Available Configurations
+- **Normalization**: LayerNorm, RMSNorm, None
+- **Residual Layout**: Pre-LN, Post-LN, Sandwich
+- **Activation**: ReLU, GeLU, Swish, SwiGLU
+- **Positional Encoding**: Sinusoidal, RoPE, ALiBi
+- **Attention**: Multi-head with configurable heads and dimensions
 
+## 📊 Visualization Features
+
+- **Loss curves** with real-time updates
+- **Attention heatmaps** showing token relationships
+- **Layer statistics** (variance, gradient norms)
+- **Activation distributions** across layers
+- **Model comparison** charts
+- **Gradient flow** visualization
+
+## 🧪 Experiment Management
+
+### Save and Load Experiments
 ```bash
-# Launch the Streamlit interface
-streamlit run transformerlab/app.py
+# Save current configuration
+uv run transformerlab train --save-config experiment.yaml
+
+# Load and run experiment
+uv run transformerlab train --config experiment.yaml
 ```
 
-### Basic Usage
+### Compare Experiments
+```bash
+# Train multiple configurations
+uv run transformerlab train --norm LayerNorm --save-results layer_norm.json
+uv run transformerlab train --norm RMSNorm --save-results rms_norm.json
 
-```python
-from transformerlab.core.transformer import Transformer
-from transformerlab.core.tokenizer import load_corpus
-
-# Load corpus and create tokenizer
-text, tokenizer = load_corpus("transformerlab/data/tiny_shakespeare.txt")
-
-# Create transformer model
-model = Transformer(
-    vocab_size=tokenizer.vocab_size,
-    hidden_dim=256,
-    num_layers=6,
-    num_heads=8,
-    norm_type="LayerNorm",
-    activation_type="ReLU",
-    residual_type="Pre-LN",
-    pos_encoding_type="Sinusoidal"
-)
-
-# Train the model
-batch_size, seq_len = 2, 128
-tokens = tokenizer.encode(text)
-# ... create batches and train
-
-# Generate text
-prompt = tokenizer.encode("First Citizen:")
-generated = model.generate(prompt, max_length=50, temperature=0.8)
-print(tokenizer.decode(generated[0]))
+# Compare results
+uv run transformerlab compare layer_norm.json rms_norm.json
 ```
 
 ## 🎓 Learning Objectives
 
-### 1. **Toggle & See**
-- Switch between Pre-LN and Post-LN to observe training stability differences
-- Compare LayerNorm vs RMSNorm effects on gradient flow
-- Watch how different activations affect signal propagation
+### For ML Engineers
+- Understand how architectural choices affect training stability
+- See the impact of normalization and residual connections
+- Visualize attention patterns and their evolution
+- Compare different positional encoding strategies
 
-### 2. **Probe a Neuron**
-- Click on specific layers to see attention patterns
-- Examine Q-K dot product statistics
-- Observe how RoPE maintains magnitude stability at long sequences
+### For Data Scientists
+- Hands-on experience with transformer internals
+- Real-time experimentation with model parameters
+- Understanding of gradient flow and optimization
+- Practical knowledge for model debugging
 
-### 3. **Share Insights**
-- Save experiment configurations
-- Export model snapshots
-- Compare multiple runs side-by-side
+### For Educators
+- Classroom-ready demonstrations
+- Interactive visualizations for concepts
+- Reproducible experiments with config files
+- Code transparency for educational purposes
 
-## 🏗️ Architecture Components
+## 🛠️ Development
 
-### **Tokenization**
-- Character-level tokenizer for educational purposes
-- Simple vocabulary building from corpus
-- Batch encoding with padding support
+### Setup Development Environment
+```bash
+# Install with development dependencies
+uv sync --group dev
 
-### **Embeddings**
-- Learnable token embeddings
-- Configurable positional encoding
-- Support for multiple positional encoding schemes
+# Install pre-commit hooks
+uv run pre-commit install
 
-### **Attention Mechanism**
-- Multi-head scaled dot-product attention
-- Causal masking for autoregressive training
-- Attention weight visualization
+# Run code quality checks
+uv run black .
+uv run ruff check .
+uv run mypy .
+```
 
-### **Feed-Forward Networks**
-- Two-layer MLP with configurable activation
-- Residual connections with different patterns
-- Statistics tracking for analysis
+### Running Tests
+```bash
+# Run all tests
+uv run pytest
 
-### **Normalization**
-- LayerNorm with learnable parameters
-- RMSNorm (simplified LayerNorm)
-- Optional normalization for ablation studies
+# Run with coverage
+uv run pytest --cov=transformerlab
 
-## 📈 Visualization Features
+# Run specific test categories
+uv run pytest -m "not slow"
+uv run pytest -m integration
+```
 
-### **Training Metrics**
-- Real-time loss curves with moving averages
-- Per-layer statistics tracking
-- Gradient norm monitoring
+### Code Quality
+- **Black**: Code formatting
+- **Ruff**: Fast linting and import sorting
+- **MyPy**: Type checking
+- **Pre-commit**: Automated quality checks
 
-### **Attention Analysis**
-- Heatmaps showing attention patterns
-- Head-specific attention visualization
-- Position-wise attention analysis
+## 📈 Performance
 
-### **Model Statistics**
-- Activation distributions
-- Weight statistics across layers
-- Signal propagation analysis
-
-## 🧪 Experiment Management
-
-### **Configuration Saving**
-- Save current model configuration
-- Export experiment results
-- Share configurations with others
-
-### **Comparison Tools**
-- Side-by-side experiment comparison
-- Statistical analysis of differences
-- Visualization of multiple runs
+- **Pure NumPy implementation** for maximum transparency
+- **Optimized for CPU** with vectorized operations
+- **Memory efficient** with in-place operations where possible
+- **Fast startup** with minimal dependencies
 
 ## 🎯 Target Audience
 
-### **Backend ML Developers**
-- Know NumPy/PyTorch but tune by copy-pasting configs
-- Want to understand why Pre-LN trains faster
-- Need to grasp RoPE vs sinusoidal differences
-
-### **Data Scientists**
-- Comfortable in notebooks, light math background
-- Read papers but find proofs impenetrable
-- Want visual confirmation of theoretical concepts
-
-### **Instructors/Mentors**
-- Need classroom demos that run on laptops
-- Want single-command setup
-- Require reproducible experiments
+- **Backend ML developers** who want to understand transformer internals
+- **Data scientists** comfortable with notebooks and light math
+- **Instructors** looking for classroom demos
+- **Researchers** prototyping architectural ideas
 
 ## 🔧 Technical Details
 
-### **Dependencies**
-- NumPy (core computations)
-- Streamlit (web interface)
-- Matplotlib (visualization)
-- PyYAML (configuration)
+### Dependencies
+- **Core**: NumPy 2.0+, Streamlit 1.32+
+- **CLI**: Typer, Rich, Pydantic
+- **Development**: Black, Ruff, MyPy, Pre-commit
+- **Testing**: Pytest, Coverage
 
-### **Performance**
-- CPU-only implementation
-- Optimized for educational clarity
-- Supports models up to ~100K parameters
-- Fast enough for interactive exploration
+### Architecture
+- **Modular design** with clear separation of concerns
+- **Type hints** throughout for better IDE support
+- **Configuration management** with Pydantic validation
+- **Error handling** with informative messages
 
-### **Limitations**
-- No GPU acceleration
-- Limited to small models
-- Character-level tokenization only
-- Single corpus included
+## 🚀 Future Enhancements
 
-## 🚧 Future Enhancements
-
-### **Planned Features**
-- [ ] Support for more corpora
-- [ ] Subword tokenization
-- [ ] Gradient-based optimization
-- [ ] More positional encoding schemes
-- [ ] Export to PyTorch/HuggingFace
-
-### **Research Directions**
-- [ ] Attention pattern analysis tools
-- [ ] Model interpretability features
-- [ ] Performance profiling
-- [ ] Memory usage optimization
+- **GPU acceleration** with CuPy or JAX
+- **More corpora** and data loading options
+- **Advanced optimizers** (Adam, AdamW, etc.)
+- **Model checkpointing** and resuming
+- **Distributed training** support
+- **Export to PyTorch/TensorFlow** for production use
 
 ## 🤝 Contributing
 
-We welcome contributions! Please see our contributing guidelines for:
-- Code style and standards
-- Testing requirements
-- Documentation updates
-- Feature proposals
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Run tests and quality checks
+5. Submit a pull request
+
+### Development Guidelines
+- Follow the existing code style (Black + Ruff)
+- Add type hints to all functions
+- Include tests for new features
+- Update documentation as needed
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+MIT License - see [LICENSE](LICENSE) file for details.
 
 ## 🙏 Acknowledgments
 
-- Inspired by the original "Attention Is All You Need" paper
-- Built for educational purposes in transformer architecture
-- Thanks to the open-source community for inspiration and tools
+- Inspired by the need for transparent transformer implementations
+- Built for educational purposes and research
+- Thanks to the open-source community for tools and libraries
 
 ---
 
-**Happy exploring! 🧠✨**
+**Ready to dive deep into transformers? Start with `uv sync` and `uv run transformerlab web`!** 🚀
