@@ -1,0 +1,40 @@
+Metadata-Version: 2.4
+Name: transformerlab
+Version: 0.1.0
+Summary: Interactive playground for understanding transformer architectures
+Author: Transformer Intuition Lab
+Classifier: Development Status :: 3 - Alpha
+Classifier: Intended Audience :: Developers
+Classifier: Intended Audience :: Education
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Operating System :: OS Independent
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.8
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Requires-Python: >=3.8
+Description-Content-Type: text/markdown
+Requires-Dist: streamlit>=1.28.0
+Requires-Dist: numpy>=1.24.0
+Requires-Dist: matplotlib>=3.7.0
+Requires-Dist: pytest>=7.4.0
+Requires-Dist: pyyaml>=6.0
+Dynamic: author
+Dynamic: classifier
+Dynamic: description
+Dynamic: description-content-type
+Dynamic: requires-dist
+Dynamic: requires-python
+Dynamic: summary
+
+# Misc
+
+A repository for miscellaneous scripts and projects.
+
+## Legacy Content
+
+Previous content has been moved to the `legacy/` directory, including:
+- Raspberry Pi DHT sensor monitoring scripts
+- Original README and LICENSE files
+- Python gitignore configuration
