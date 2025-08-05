@@ -153,3 +153,12 @@ exclude_lines = [
     "class .*\\bProtocol\\):",
     "@(abc\\.)?abstractmethod",
 ]
+
+[dependency-groups]
+dev = [
+    "black>=25.1.0",
+    "mypy>=1.17.1",
+    "pre-commit>=4.2.0",
+    "pytest-cov>=6.2.1",
+    "ruff>=0.12.7",
+]

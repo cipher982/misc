@@ -3,8 +3,8 @@ Activation functions for the Transformer Intuition Lab.
 Pure NumPy implementations for educational purposes.
 """
 
+
 import numpy as np
-from typing import Dict
 
 
 def relu(x: np.ndarray) -> np.ndarray:
@@ -29,11 +29,11 @@ def swiglu(x: np.ndarray, gate: np.ndarray) -> np.ndarray:
 
 class ActivationModule:
     """Activation function module with statistics tracking."""
-    
+
     def __init__(self, activation_type: str = "ReLU"):
         self.activation_type = activation_type
         self.activation_fn = self._get_activation_fn(activation_type)
-    
+
     def _get_activation_fn(self, activation_type: str):
         """Get activation function by name."""
         if activation_type == "ReLU":
@@ -46,7 +46,7 @@ class ActivationModule:
             return swiglu
         else:
             raise ValueError(f"Unknown activation type: {activation_type}")
-    
+
     def forward(self, x: np.ndarray, gate: np.ndarray = None) -> np.ndarray:
         """Forward pass through activation function."""
         if self.activation_type == "SwiGLU":
@@ -55,29 +55,30 @@ class ActivationModule:
             return self.activation_fn(x, gate)
         else:
             return self.activation_fn(x)
-    
-    def get_stats(self, x: np.ndarray, gate: np.ndarray = None) -> Dict:
+
+    def get_stats(self, x: np.ndarray, gate: np.ndarray = None) -> dict:
         """Get activation statistics for visualization."""
         output = self.forward(x, gate)
-        
+
         stats = {
-            'input_mean': np.mean(x),
-            'input_std': np.std(x),
-            'input_min': np.min(x),
-            'input_max': np.max(x),
-            'output_mean': np.mean(output),
-            'output_std': np.std(output),
-            'output_min': np.min(output),
-            'output_max': np.max(output),
-            'dead_neurons': np.sum(output == 0) / output.size if self.activation_type == "ReLU" else 0
+            "input_mean": np.mean(x),
+            "input_std": np.std(x),
+            "input_min": np.min(x),
+            "input_max": np.max(x),
+            "output_mean": np.mean(output),
+            "output_std": np.std(output),
+            "output_min": np.min(output),
+            "output_max": np.max(output),
+            "dead_neurons": (
+                np.sum(output == 0) / output.size
+                if self.activation_type == "ReLU"
+                else 0
+            ),
         }
-        
+
         if gate is not None:
-            stats.update({
-                'gate_mean': np.mean(gate),
-                'gate_std': np.std(gate)
-            })
-        
+            stats.update({"gate_mean": np.mean(gate), "gate_std": np.std(gate)})
+
         return stats
 
 
