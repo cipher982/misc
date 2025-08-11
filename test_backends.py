@@ -92,7 +92,7 @@ def test_simple_forward_pass():
     sample_input = [[1, 2, 3, 4, 5]]
     sample_targets = [[2, 3, 4, 5, 6]]
     
-    for backend_name in ["numpy"]:  # Start with numpy only
+    for backend_name in ["numpy", "python", "torch"]:  # Test all backends
         print(f"\\n🔧 Testing {backend_name} forward pass:")
         
         try:

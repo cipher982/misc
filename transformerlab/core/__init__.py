@@ -19,6 +19,7 @@ from .positional_encoding import (
 )
 from .tokenizer import CharTokenizer, load_corpus
 from .transformer import Transformer, TransformerBlock
+from .optimizer import SGDOptimizer, AdamOptimizer, get_optimizer
 
 __all__ = [
     "Transformer",
@@ -40,4 +41,7 @@ __all__ = [
     "create_causal_mask",
     "FeedForward",
     "get_residual_type",
+    "SGDOptimizer",
+    "AdamOptimizer",
+    "get_optimizer",
 ]
