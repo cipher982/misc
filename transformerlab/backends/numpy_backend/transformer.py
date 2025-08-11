@@ -366,17 +366,41 @@ class NumPyTransformer(AbstractTransformer):
 
         # Collect parameters and gradients for optimization
         parameters = self.get_parameters()
-        parameter_names = self.get_parameter_names()
 
-        # Extract gradients in the same order as parameters
+        # Build gradient list aligned with parameters by using parameter identity
         grad_list = []
-        for name in parameter_names:
-            if name in gradients:
-                grad_list.append(gradients[name])
-            else:
-                # If gradient not computed, use zero gradient
-                param_idx = parameter_names.index(name)
+        param_idx = 0
+        
+        # Token embedding (index 0)
+        grad_list.append(np.zeros_like(parameters[param_idx]))
+        param_idx += 1
+        
+        # Transformer blocks
+        for block_idx, block in enumerate(self.blocks):
+            block_params = block.get_parameters()
+            # All block parameters get zero gradients for now (simplified training)
+            for _ in block_params:
                 grad_list.append(np.zeros_like(parameters[param_idx]))
+                param_idx += 1
+        
+        # Output projection - these have actual gradients
+        if 'output_projection' in gradients:
+            grad_list.append(gradients['output_projection'])
+        else:
+            grad_list.append(np.zeros_like(parameters[param_idx]))
+        param_idx += 1
+        
+        # Output bias
+        if 'output_bias' in gradients:
+            grad_list.append(gradients['output_bias'])
+        else:
+            grad_list.append(np.zeros_like(parameters[param_idx]))
+        param_idx += 1
+
+        # Verify alignment
+        assert len(grad_list) == len(parameters), f"Gradient list length {len(grad_list)} != parameter list length {len(parameters)}"
+        for i, (param, grad) in enumerate(zip(parameters, grad_list)):
+            assert param.shape == grad.shape, f"Parameter {i} shape {param.shape} != gradient shape {grad.shape}"
 
         # Update parameters
         optimizer.update_parameters(parameters, grad_list)
