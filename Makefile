@@ -14,6 +14,13 @@ help:
 	@echo "  make test        - Test all backends (numpy, python, torch)"
 	@echo "  make benchmark   - Run performance comparison"
 	@echo ""
+	@echo "🧪 Testing:"
+	@echo "  make test        - Run comprehensive test suite"
+	@echo "  make test-backends - Quick backend compatibility test"
+	@echo "  make test-training - Test training functionality"
+	@echo "  make test-performance - Run performance tests (fast)"
+	@echo "  make test-slow   - Run comprehensive slow tests"
+	@echo ""
 	@echo "🔧 Development:"
 	@echo "  make lint        - Run code linting with ruff"
 	@echo "  make format      - Format code with black"  
@@ -23,7 +30,6 @@ help:
 	@echo ""
 	@echo "📊 Analysis:"
 	@echo "  make compare     - Quick backend comparison"
-	@echo "  make training    - Test training functionality"
 	@echo ""
 
 # Installation
@@ -38,11 +44,34 @@ demo:
 	@echo "📱 Open http://localhost:8501 in your browser"
 	uv run streamlit run transformerlab/app.py
 
-# Test all backends
+# Test all backends (comprehensive)
 test:
-	@echo "🧪 Testing all transformer backends..."
+	@echo "🧪 Running comprehensive test suite..."
+	uv run pytest transformerlab/tests/ -v
+	@echo "✅ All tests completed!"
+
+# Quick backend test
+test-backends:
+	@echo "🧪 Testing transformer backends (quick)..."
 	uv run python test_backends.py
 	@echo "✅ Backend testing complete!"
+
+# Test specific components
+test-training:
+	@echo "🏋️ Testing training functionality..."
+	uv run pytest transformerlab/tests/test_training.py -v
+
+test-performance:
+	@echo "⚡ Running performance tests..."
+	uv run pytest transformerlab/tests/test_performance.py -v -m "not slow"
+
+test-slow:
+	@echo "🐌 Running slow/comprehensive tests..."
+	uv run pytest transformerlab/tests/ -v -m "slow"
+
+test-integration:
+	@echo "🔗 Running integration tests..."
+	uv run pytest transformerlab/tests/ -v -m "integration"
 
 # Performance benchmarking
 benchmark:
