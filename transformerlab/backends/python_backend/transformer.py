@@ -5,6 +5,7 @@ This is the main transformer class that combines all components
 and shows the complete training process step-by-step.
 """
 
+import math
 import random
 from typing import List, Tuple, Dict, Optional, Any
 

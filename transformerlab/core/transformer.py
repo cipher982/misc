@@ -79,7 +79,65 @@ class TransformerBlock:
             "residual_type": self.residual_type,
         }
 
+        # Store intermediate values for backward pass
+        self._cache = {
+            'input': x,
+            'attn_output': attn_output,
+            'ff_input': x if self.residual_type == "Pre-LN" else x + attn_output
+        }
+
         return ff_output, block_stats
+
+    def backward(self, grad_output: np.ndarray) -> tuple[np.ndarray, dict]:
+        """
+        Backward pass through transformer block.
+
+        Args:
+            grad_output: Gradient of loss w.r.t. output
+
+        Returns:
+            Tuple of (grad_input, gradients_dict)
+        """
+        if not hasattr(self, '_cache'):
+            raise RuntimeError("Forward pass must be called before backward pass")
+
+        x = self._cache['input']
+        attn_output = self._cache['attn_output']
+        ff_input = self._cache['ff_input']
+
+        # Backward through feed-forward
+        grad_ff_input, ff_gradients = self.ff.backward(grad_output)
+
+        # Backward through attention
+        if self.residual_type == "Pre-LN":
+            # grad_ff_input goes to both attention output and residual connection
+            grad_attn_input, attn_gradients = self.attention.backward(grad_ff_input)
+            grad_input = grad_ff_input + grad_attn_input
+        else:
+            # Post-LN case (simplified)
+            grad_attn_input, attn_gradients = self.attention.backward(grad_ff_input)
+            grad_input = grad_ff_input + grad_attn_input
+
+        # Combine all gradients
+        all_gradients = {}
+        all_gradients.update({f"attention_{k}": v for k, v in attn_gradients.items()})
+        all_gradients.update({f"ff_{k}": v for k, v in ff_gradients.items()})
+
+        return grad_input, all_gradients
+
+    def get_parameters(self) -> list[np.ndarray]:
+        """Get list of parameters for optimization."""
+        params = []
+        params.extend(self.attention.get_parameters())
+        params.extend(self.ff.get_parameters())
+        return params
+
+    def get_parameter_names(self) -> list[str]:
+        """Get list of parameter names."""
+        names = []
+        names.extend([f"attention_{name}" for name in self.attention.get_parameter_names()])
+        names.extend([f"ff_{name}" for name in self.ff.get_parameter_names()])
+        return names
 
 
 class Transformer:
@@ -232,6 +290,13 @@ class Transformer:
             },
         }
 
+        # Cache intermediate values for backward pass
+        self._forward_cache = {
+            'embeddings': embeddings,
+            'final_hidden': h,
+            'layer_outputs': [block._cache for block in self.blocks if hasattr(block, '_cache')]
+        }
+
         return logits, model_stats
 
     def _compute_loss(self, logits: np.ndarray, targets: np.ndarray) -> float:
@@ -344,3 +409,136 @@ class Transformer:
                 "pos_encoding_type": self.pos_encoding_type,
             },
         }
+
+    def backward(self, logits: np.ndarray, targets: np.ndarray) -> tuple[float, dict]:
+        """
+        Backward pass to compute gradients.
+
+        Args:
+            logits: Model output logits of shape (batch_size, seq_len, vocab_size)
+            targets: Target token indices of shape (batch_size, seq_len)
+
+        Returns:
+            Tuple of (loss, gradients_dict)
+        """
+        batch_size, seq_len, vocab_size = logits.shape
+
+        # Compute softmax and loss
+        exp_logits = np.exp(logits - np.max(logits, axis=-1, keepdims=True))
+        probs = exp_logits / np.sum(exp_logits, axis=-1, keepdims=True)
+
+        # Compute loss
+        loss = 0
+        for b in range(batch_size):
+            for t in range(seq_len):
+                target_idx = targets[b, t]
+                if target_idx > 0:  # Skip padding tokens
+                    loss -= np.log(probs[b, t, target_idx] + 1e-8)
+
+        num_tokens = np.sum(targets > 0)
+        loss = loss / max(num_tokens, 1)
+
+        # Compute gradient of loss w.r.t. logits
+        grad_logits = probs.copy()
+        for b in range(batch_size):
+            for t in range(seq_len):
+                target_idx = targets[b, t]
+                if target_idx > 0:
+                    grad_logits[b, t, target_idx] -= 1
+
+        grad_logits = grad_logits / max(num_tokens, 1)
+
+        # Backward through output projection
+        if not hasattr(self, '_forward_cache'):
+            raise RuntimeError("Forward pass must be called before backward pass")
+
+        final_hidden = self._forward_cache['final_hidden']
+        grad_output_projection = np.tensordot(final_hidden, grad_logits, axes=([0, 1], [0, 1]))
+        grad_output_bias = np.sum(grad_logits, axis=(0, 1))
+        grad_final_hidden = np.matmul(grad_logits, self.output_projection.T)
+
+        # Backward through blocks
+        grad_hidden = grad_final_hidden
+        all_gradients = {}
+        
+        # Store gradients for embedding and output layers
+        all_gradients['output_projection'] = grad_output_projection
+        all_gradients['output_bias'] = grad_output_bias
+
+        for i in reversed(range(len(self.blocks))):
+            grad_hidden, block_gradients = self.blocks[i].backward(grad_hidden)
+            for k, v in block_gradients.items():
+                all_gradients[f'block_{i}_{k}'] = v
+
+        # Gradient through embeddings (simplified - just skip for now)
+        # In a full implementation, you'd update the embedding matrix here
+
+        return loss, all_gradients
+
+    def train_step(self, x: np.ndarray, targets: np.ndarray, optimizer) -> float:
+        """
+        Single training step.
+
+        Args:
+            x: Input tokens of shape (batch_size, seq_len)
+            targets: Target tokens of shape (batch_size, seq_len)  
+            optimizer: Optimizer instance
+
+        Returns:
+            Loss value
+        """
+        # Forward pass
+        logits, stats = self.forward(x, targets)
+        
+        # Backward pass
+        loss, gradients = self.backward(logits, targets)
+        
+        # Collect parameters and gradients for optimization
+        parameters = self.get_parameters()
+        parameter_names = self.get_parameter_names()
+        
+        # Extract gradients in the same order as parameters
+        grad_list = []
+        for name in parameter_names:
+            if name in gradients:
+                grad_list.append(gradients[name])
+            else:
+                # If gradient not computed, use zero gradient
+                param_idx = parameter_names.index(name)
+                grad_list.append(np.zeros_like(parameters[param_idx]))
+        
+        # Update parameters
+        optimizer.update_parameters(parameters, grad_list)
+        
+        return loss
+
+    def get_parameters(self) -> list[np.ndarray]:
+        """Get all trainable parameters."""
+        parameters = []
+        
+        # Add embedding parameters
+        parameters.append(self.token_embedding)
+        
+        # Add transformer block parameters  
+        for block in self.blocks:
+            parameters.extend(block.get_parameters())
+            
+        # Add output projection parameters
+        parameters.append(self.output_projection)
+        parameters.append(self.output_bias)
+        
+        return parameters
+
+    def get_parameter_names(self) -> list[str]:
+        """Get parameter names corresponding to get_parameters()."""
+        names = ['token_embedding']
+        
+        # Add transformer block parameter names
+        for i, block in enumerate(self.blocks):
+            block_names = block.get_parameter_names()
+            names.extend([f'block_{i}_{name}' for name in block_names])
+            
+        # Add output projection parameter names
+        names.extend(['output_projection', 'output_bias'])
+        
+        return names

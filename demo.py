@@ -9,6 +9,7 @@ import numpy as np
 
 from transformerlab.core.tokenizer import load_corpus
 from transformerlab.core.transformer import Transformer
+from transformerlab.core.optimizer import SGDOptimizer
 from transformerlab.viz.plots import plot_layer_statistics, plot_loss_history
 
 
@@ -74,13 +75,16 @@ def demo_basic_training():
             if end_idx < len(tokens):
                 targets[i, : end_idx - start_idx] = tokens[start_idx + 1 : end_idx + 1]
 
+        # Create optimizer
+        optimizer = SGDOptimizer(learning_rate=0.01)
+
         # Train
         losses = []
         for step in range(10):
-            logits, stats = model.forward(x, targets)
-            losses.append(stats["loss"])
+            loss = model.train_step(x, targets, optimizer)
+            losses.append(loss)
             if step % 3 == 0:
-                print(f"   Step {step}: Loss = {stats['loss']:.4f}")
+                print(f"   Step {step}: Loss = {loss:.4f}")
 
         results.append(
             {"config": config["name"], "losses": losses, "final_loss": losses[-1]}
@@ -158,10 +162,13 @@ def demo_text_generation():
         if end_idx < len(tokens):
             targets[i, : end_idx - start_idx] = tokens[start_idx + 1 : end_idx + 1]
 
+    # Create optimizer
+    optimizer = SGDOptimizer(learning_rate=0.01)
+
     for step in range(20):
-        logits, stats = model.forward(x, targets)
+        loss = model.train_step(x, targets, optimizer)
         if step % 5 == 0:
-            print(f"   Step {step}: Loss = {stats['loss']:.4f}")
+            print(f"   Step {step}: Loss = {loss:.4f}")
 
     # Generate text
     print("\n🎲 Generating text...")
@@ -214,21 +221,29 @@ def demo_visualization():
         if end_idx < len(tokens):
             targets[i, : end_idx - start_idx] = tokens[start_idx + 1 : end_idx + 1]
 
+    # Create optimizer
+    optimizer = SGDOptimizer(learning_rate=0.01)
+
     # Train and collect layer stats
     layer_stats_history = []
+    losses = []
 
     for step in range(15):
+        loss = model.train_step(x, targets, optimizer)
+        losses.append(loss)
+        
+        # Get layer stats from forward pass for visualization
         logits, stats = model.forward(x, targets)
         layer_stats_history.append(stats["layer_stats"])
 
         if step % 5 == 0:
-            print(f"   Step {step}: Loss = {stats['loss']:.4f}")
+            print(f"   Step {step}: Loss = {loss:.4f}")
 
     # Create visualizations
     print("\n📈 Creating visualizations...")
 
-    # Loss plot
-    fig = plot_loss_history(model.loss_history, "Training Loss Over Time")
+    # Loss plot (use our collected losses instead of model.loss_history which has duplicates)
+    fig = plot_loss_history(losses, "Training Loss Over Time")
     plt.savefig("demo_loss.png", dpi=150, bbox_inches="tight")
     plt.close()
 

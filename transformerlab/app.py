@@ -8,9 +8,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import streamlit as st
 
-from .core.tokenizer import load_corpus
-from .core.transformer import Transformer
-from .viz.plots import plot_loss_history
+from transformerlab.core.tokenizer import load_corpus
+from transformerlab.core.transformer import Transformer
+from transformerlab.viz.plots import plot_loss_history
 
 
 def main():
