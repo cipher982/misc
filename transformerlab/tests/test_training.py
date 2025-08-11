@@ -4,7 +4,7 @@ Comprehensive training tests for transformer models.
 
 import pytest
 import numpy as np
-from typing import Dict, List
+# Using built-in generics (Python 3.9+)
 
 from transformerlab.backends.factory import create_transformer
 from transformerlab.backends.numpy_backend.optimizer import create_numpy_optimizer

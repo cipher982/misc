@@ -4,7 +4,7 @@ Training and inference UI components for the Transformer Intuition Lab.
 
 import os
 import random
-from typing import Dict, Any
+from typing import Any
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -15,7 +15,7 @@ from transformerlab.core.tokenizer import load_corpus
 from transformerlab.viz.plots import plot_loss_history
 
 
-def initialize_model(config: Dict[str, Any]):
+def initialize_model(config: dict[str, Any]):
     """Initialize the transformer model with given configuration."""
     try:
         # Load corpus
@@ -57,7 +57,7 @@ def initialize_model(config: Dict[str, Any]):
         st.error(f"❌ Error initializing model: {str(e)}")
 
 
-def train_model(config: Dict[str, Any]):
+def train_model(config: dict[str, Any]):
     """Train the model for the specified number of steps."""
     if st.session_state.model is None or st.session_state.tokenizer is None:
         st.error("Model not initialized!")

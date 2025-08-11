@@ -4,7 +4,7 @@ Comprehensive backend testing suite.
 
 import pytest
 import numpy as np
-from typing import Dict, Any, List
+from typing import Any
 
 from transformerlab.backends.factory import (
     create_transformer, 

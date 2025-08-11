@@ -5,7 +5,7 @@ Performance and benchmarking tests.
 import pytest
 import time
 import numpy as np
-from typing import Dict, List, Tuple
+# Using built-in generics (Python 3.9+)
 
 # Import psutil conditionally for performance tests
 psutil = pytest.importorskip("psutil", reason="psutil required for performance tests")

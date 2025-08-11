@@ -6,7 +6,7 @@ import pytest
 import numpy as np
 import tempfile
 import os
-from typing import Dict, Any, List
+from typing import Any
 
 from transformerlab.backends.factory import create_transformer, list_backends
 from transformerlab.core.tokenizer import CharTokenizer
@@ -149,7 +149,7 @@ class TestDataGenerator:
     """Helper class for generating test data."""
     
     @staticmethod
-    def create_sequence_data(vocab_size: int, seq_len: int, batch_size: int = 1) -> Dict[str, np.ndarray]:
+    def create_sequence_data(vocab_size: int, seq_len: int, batch_size: int = 1) -> dict[str, np.ndarray]:
         """Create random sequence data for testing."""
         np.random.seed(42)  # For reproducible tests
         
@@ -162,7 +162,7 @@ class TestDataGenerator:
         }
     
     @staticmethod
-    def create_text_data(tokenizer, text: str = "hello world test") -> Dict[str, np.ndarray]:
+    def create_text_data(tokenizer, text: str = "hello world test") -> dict[str, np.ndarray]:
         """Create tokenized text data."""
         tokens = tokenizer.encode(text)
         
