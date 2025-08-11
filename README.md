@@ -1,8 +1,11 @@
 # 🧠 Transformer Intuition Lab
 
-**Interactive playground for understanding transformer architectures**
+**Multi-backend transformer implementation for educational and research purposes**
 
-A hands-on environment where you can poke every layer-norm, activation, and position-encoding trick without hidden abstractions. Built with pure NumPy for maximum transparency and educational value.
+Compare how transformers work across three different implementations:
+- **🐍 Pure Python**: Maximum transparency with step-by-step execution logging  
+- **⚡ NumPy**: Fast vectorized operations with educational clarity
+- **🚀 PyTorch**: Production-ready with GPU support and automatic differentiation
 
 ## 🎯 Purpose
 
@@ -14,47 +17,108 @@ Give Python-savvy, math-averse developers a hands-on environment where they can 
 - Python 3.13+
 - [uv](https://docs.astral.sh/uv/) (modern Python package manager)
 
-### Installation
+### Installation & Demo
 
-1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/transformerlab/transformerlab.git
-   cd transformerlab
-   ```
+```bash
+# Install dependencies and run demo
+make install
+make demo
 
-2. **Install dependencies:**
-   ```bash
-   uv sync
-   ```
+# Test all backends
+make test
 
-3. **Launch the web interface:**
-   ```bash
-   uv run transformerlab web
-   ```
+# Quick performance comparison
+make compare
 
-4. **Or use the CLI:**
-   ```bash
-   # Show available commands
-   uv run transformerlab --help
-   
-   # Train a model
-   uv run transformerlab train --layers 4 --steps 100
-   
-   # Generate text
-   uv run transformerlab generate "Hello, world!"
-   
-   # Run demo
-   uv run transformerlab demo
-   ```
+# Full benchmark suite
+make benchmark
+```
+
+### Manual Usage
+
+```python
+from transformerlab.backends.factory import create_transformer
+
+# Create models with different backends
+model_numpy = create_transformer("numpy", vocab_size=50, hidden_dim=64, num_layers=2, num_heads=4, ff_dim=128)
+model_python = create_transformer("python", vocab_size=50, hidden_dim=64, num_layers=2, num_heads=4, ff_dim=128)  
+model_torch = create_transformer("torch", vocab_size=50, hidden_dim=64, num_layers=2, num_heads=4, ff_dim=128)
+
+# Test forward pass
+sample_input = [[1, 2, 3, 4, 5]]
+sample_targets = [[2, 3, 4, 5, 6]]
+
+logits, stats = model_numpy.forward(sample_input, sample_targets)
+print(f"NumPy Loss: {stats['loss']:.4f}")
+```
+
+## 📋 Available Commands
+
+Run `make help` to see all available commands:
+
+### 🚀 **Quick Start**
+- `make install` - Install dependencies with uv
+- `make demo` - Launch interactive Streamlit web app
+- `make test` - Test all three backends  
+- `make benchmark` - Run comprehensive performance comparison
+
+### 📊 **Analysis**
+- `make compare` - Quick backend comparison (fast)
+- `make training` - Test training functionality
+- `make status` - Show system status
+
+### 🔧 **Development**  
+- `make lint` - Run code linting with ruff
+- `make format` - Format code with black
+- `make clean` - Clean generated files
+
+## 🎯 **What You'll See**
+
+### Backend Performance Comparison
+```
+Backend Comparison:
+==================
+  numpy:   0.53ms,  2,884 params, loss=2.9910
+ python:   0.86ms,  2,916 params, loss=3.0211  
+  torch:  17.93ms,  2,916 params, loss=2.9984
+```
+
+### Educational Python Output (Verbose Mode)
+```
+[PythonTransformer] Forward pass:
+  Step 1: Token embedding lookup...
+  Step 2: Adding positional encoding...
+[PythonAttention] Forward pass: batch_size=1, seq_len=5
+  Step 1: Computing Q, K, V projections...
+  Step 2: Reshaping for 2 heads...
+  Step 3: Computing attention scores...
+```
+
+### Performance Benchmarking
+```
+📊 Performance Summary
+Model    Backend  Forward     Memory     Speedup    
+tiny     numpy    0.71ms      0.5MB      1.00x      
+tiny     python   19.80ms     0.4MB      0.04x      
+tiny     torch    1.76ms      41.4MB     0.40x  
+```
 
 ## 🎮 Features
 
+### Multi-Backend Architecture
+- **Mathematical Equivalence**: All backends produce consistent results
+- **Educational Transparency**: See exactly how transformers work
+- **Performance Analysis**: Compare speed and memory usage
+- **Interactive Demo**: Web-based exploration with Streamlit
+- **Benchmarking Suite**: Comprehensive performance testing
+
 ### Interactive Web Interface
 - **Real-time training** with live loss curves
+- **Backend selection** - Switch between NumPy, Python, PyTorch
 - **Architecture toggles** for normalization, activation, and positional encoding
 - **Attention visualization** with heatmaps
 - **Experiment comparison** with side-by-side metrics
-- **Code inspection** - click any component to see its NumPy implementation
+- **Code inspection** - click any component to see its implementation
 
 ### Command Line Interface
 - **Rich terminal output** with progress bars and tables
@@ -72,6 +136,16 @@ Give Python-savvy, math-averse developers a hands-on environment where they can 
 
 ## 🏗️ Architecture
 
+### Multi-Backend Structure
+```
+transformerlab/backends/
+├── abstract.py           # Abstract base classes
+├── factory.py           # Backend factory & registry
+├── numpy_backend/       # Fast NumPy implementation  
+├── python_backend/      # Educational Python version
+└── torch_backend/       # Production PyTorch version
+```
+
 ### Model Components
 ```
 Input → Embeddings → Positional Encoding → Transformer Blocks → Output
@@ -80,6 +154,7 @@ Transformer Block: Norm → Attention → Norm → Feed-Forward → Residual
 ```
 
 ### Available Configurations
+- **Backends**: NumPy (fast), Python (educational), PyTorch (production)
 - **Normalization**: LayerNorm, RMSNorm, None
 - **Residual Layout**: Pre-LN, Post-LN, Sandwich
 - **Activation**: ReLU, GeLU, Swish, SwiGLU
@@ -106,34 +181,40 @@ uv run transformerlab train --save-config experiment.yaml
 uv run transformerlab train --config experiment.yaml
 ```
 
-### Compare Experiments
-```bash
-# Train multiple configurations
-uv run transformerlab train --norm LayerNorm --save-results layer_norm.json
-uv run transformerlab train --norm RMSNorm --save-results rms_norm.json
+### Generated Files
 
-# Compare results
-uv run transformerlab compare layer_norm.json rms_norm.json
-```
+After running benchmarks and tests:
+- `benchmark_report.txt` - Human-readable performance analysis
+- `benchmark_results.json` - Raw benchmark data for analysis  
+- Streamlit runs at `http://localhost:8501`
 
-## 🎓 Learning Objectives
+## 🎓 Educational Purpose
+
+This project demonstrates:
+- How transformers work at different levels of abstraction
+- Performance trade-offs between implementations  
+- The value of vectorization (NumPy vs Pure Python)
+- Production considerations (PyTorch's ecosystem)
+- Memory usage patterns across approaches
+
+Perfect for students, researchers, and practitioners who want to understand transformer internals!
 
 ### For ML Engineers
-- Understand how architectural choices affect training stability
+- Compare backend performance and memory usage
+- Understand implementation trade-offs
 - See the impact of normalization and residual connections
 - Visualize attention patterns and their evolution
-- Compare different positional encoding strategies
 
 ### For Data Scientists
 - Hands-on experience with transformer internals
+- Educational transparency with step-by-step Python logging
 - Real-time experimentation with model parameters
 - Understanding of gradient flow and optimization
-- Practical knowledge for model debugging
 
 ### For Educators
-- Classroom-ready demonstrations
+- Three different abstraction levels for teaching
+- Classroom-ready demonstrations with make commands
 - Interactive visualizations for concepts
-- Reproducible experiments with config files
 - Code transparency for educational purposes
 
 ## 🛠️ Development
