@@ -26,7 +26,7 @@ _BACKEND_REGISTRY: Dict[BackendType, Dict[str, Any]] = {
         "best_for": "Learning transformer internals and fast CPU inference",
     },
     BackendType.PYTHON: {
-        "module": "transformerlab.backends.python_backend", 
+        "module": "transformerlab.backends.python_backend.transformer", 
         "class": "PythonTransformer",
         "description": "Pure Python implementation with explicit loops and operations",
         "features": ["Maximum transparency", "Step-by-step execution", "No vectorization"],
@@ -35,7 +35,7 @@ _BACKEND_REGISTRY: Dict[BackendType, Dict[str, Any]] = {
         "best_for": "Understanding algorithms step-by-step and debugging",
     },
     BackendType.TORCH: {
-        "module": "transformerlab.backends.torch_backend",
+        "module": "transformerlab.backends.torch_backend.transformer",
         "class": "TorchTransformer", 
         "description": "PyTorch-based implementation with automatic differentiation",
         "features": ["GPU acceleration", "Automatic gradients", "Production-ready"],
