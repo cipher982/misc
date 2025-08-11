@@ -22,8 +22,9 @@ from .utils import (
 class PythonAttention(AbstractAttention):
     """Pure Python multi-head attention implementation."""
 
-    def __init__(self, hidden_dim: int, num_heads: int, dropout: float = 0.0):
+    def __init__(self, hidden_dim: int, num_heads: int, dropout: float = 0.0, verbose: bool = True):
         super().__init__(hidden_dim, num_heads, dropout)
+        self.verbose = verbose
 
         # Initialize weight matrices (hidden_dim, hidden_dim)
         self.w_q = randn((hidden_dim, hidden_dim))
@@ -44,43 +45,52 @@ class PythonAttention(AbstractAttention):
         """Forward pass through attention with explicit steps."""
         batch_size, seq_len, _ = get_shape(x)
 
-        print(f"[PythonAttention] Forward pass: batch_size={batch_size}, seq_len={seq_len}")
+        if self.verbose:
+            print(f"[PythonAttention] Forward pass: batch_size={batch_size}, seq_len={seq_len}")
 
         # Step 1: Linear transformations to get Q, K, V
-        print("  Step 1: Computing Q, K, V projections...")
+        if self.verbose:
+            print("  Step 1: Computing Q, K, V projections...")
         q = add_3d(matmul_3d(x, self.w_q), self.b_q)  # (batch, seq, hidden)
         k = add_3d(matmul_3d(x, self.w_k), self.b_k)  # (batch, seq, hidden)
         v = add_3d(matmul_3d(x, self.w_v), self.b_v)  # (batch, seq, hidden)
 
         # Step 2: Reshape for multi-head attention
-        print(f"  Step 2: Reshaping for {self.num_heads} heads...")
+        if self.verbose:
+            print(f"  Step 2: Reshaping for {self.num_heads} heads...")
         q_heads = self._reshape_for_heads(q)  # (batch, seq, num_heads, head_dim)
         k_heads = self._reshape_for_heads(k)
         v_heads = self._reshape_for_heads(v)
 
         # Step 3: Compute attention scores
-        print("  Step 3: Computing attention scores...")
+        if self.verbose:
+            print("  Step 3: Computing attention scores...")
         scores = self._compute_attention_scores(q_heads, k_heads)  # (batch, num_heads, seq, seq)
 
         # Step 4: Apply mask if provided
         if mask is not None:
-            print("  Step 4: Applying attention mask...")
+            if self.verbose:
+                print("  Step 4: Applying attention mask...")
             scores = self._apply_mask(scores, mask)
 
         # Step 5: Apply softmax
-        print("  Step 5: Applying softmax to get attention weights...")
+        if self.verbose:
+            print("  Step 5: Applying softmax to get attention weights...")
         attention_weights = self._apply_softmax(scores)  # (batch, num_heads, seq, seq)
 
         # Step 6: Apply attention to values
-        print("  Step 6: Applying attention weights to values...")
+        if self.verbose:
+            print("  Step 6: Applying attention weights to values...")
         attention_output = self._apply_attention_to_values(attention_weights, v_heads)  # (batch, seq, num_heads, head_dim)
 
         # Step 7: Concatenate heads
-        print("  Step 7: Concatenating attention heads...")
+        if self.verbose:
+            print("  Step 7: Concatenating attention heads...")
         concat_output = self._concatenate_heads(attention_output)  # (batch, seq, hidden)
 
         # Step 8: Final output projection
-        print("  Step 8: Final output projection...")
+        if self.verbose:
+            print("  Step 8: Final output projection...")
         output = add_3d(matmul_3d(concat_output, self.w_o), self.b_o)
 
         # Cache intermediate values for backward pass
