@@ -1,7 +1,14 @@
 # Transformer Intuition Lab - Makefile
 # Quick commands for running the multi-backend transformer system
+# REQUIRES: Python 3.13 ONLY
 
 .PHONY: help install test benchmark demo clean lint format
+
+# Python version check - ensures Python 3.13 is being used
+PYTHON_VERSION_CHECK := $(shell python --version 2>&1 | grep -c "Python 3.13")
+ifeq ($(PYTHON_VERSION_CHECK),0)
+    $(error ❌ Python 3.13 required! Current: $(shell python --version 2>&1). Use: python3.13 or update your PATH)
+endif
 
 # Default target
 help:

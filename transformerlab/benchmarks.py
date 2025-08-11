@@ -9,7 +9,7 @@ implementations across different model sizes and operations.
 import time
 import tracemalloc
 import json
-from typing import Dict, List, Any, Optional
+from typing import Any
 import numpy as np
 from dataclasses import dataclass, asdict
 
@@ -21,30 +21,30 @@ class BenchmarkResult:
     """Results from a single benchmark run."""
     backend: str
     operation: str
-    model_config: Dict[str, Any]
+    model_config: dict[str, Any]
     forward_time_ms: float
-    backward_time_ms: Optional[float]
-    training_time_ms: Optional[float]
+    backward_time_ms: float | None
+    training_time_ms: float | None
     memory_usage_mb: float
     parameter_count: int
     accuracy_loss: float
     success: bool
-    error_message: Optional[str] = None
+    error_message: str | None = None
 
 
 class PerformanceBenchmark:
     """Comprehensive performance benchmarking suite."""
     
     def __init__(self):
-        self.results: List[BenchmarkResult] = []
+        self.results: list[BenchmarkResult] = []
         self.backends = list_backends()
     
     def benchmark_model_sizes(
         self,
-        size_configs: List[Dict[str, Any]],
-        backends: Optional[List[str]] = None,
+        size_configs: list[dict[str, Any]],
+        backends: list[str] | None = None,
         num_runs: int = 3
-    ) -> List[BenchmarkResult]:
+    ) -> list[BenchmarkResult]:
         """Benchmark different model sizes across backends."""
         backends = backends or self.backends
         all_results = []
@@ -91,7 +91,7 @@ class PerformanceBenchmark:
     def _benchmark_single_run(
         self, 
         backend: str, 
-        config: Dict[str, Any], 
+        config: dict[str, Any], 
         run_number: int
     ) -> BenchmarkResult:
         """Run a single benchmark iteration."""
@@ -200,9 +200,9 @@ class PerformanceBenchmark:
     
     def _average_results(
         self, 
-        results: List[BenchmarkResult], 
+        results: list[BenchmarkResult], 
         backend: str, 
-        config: Dict[str, Any]
+        config: dict[str, Any]
     ) -> BenchmarkResult:
         """Average multiple benchmark results."""
         n = len(results)
@@ -234,7 +234,7 @@ class PerformanceBenchmark:
             success=True
         )
     
-    def _compare_backends_original(self, results: List[BenchmarkResult]) -> Dict[str, Any]:
+    def _compare_backends_original(self, results: list[BenchmarkResult]) -> dict[str, Any]:
         """Generate comparison analysis between backends."""
         if not results:
             return {}
@@ -283,7 +283,7 @@ class PerformanceBenchmark:
         
         return analysis
     
-    def generate_report(self, results: List[BenchmarkResult], save_path: Optional[str] = None) -> str:
+    def generate_report(self, results: list[BenchmarkResult], save_path: str | None = None) -> str:
         """Generate a comprehensive benchmark report."""
         analysis = self._compare_backends_original(results)
         
@@ -343,7 +343,7 @@ class PerformanceBenchmark:
         
         return report_text
     
-    def save_raw_results(self, results: List[BenchmarkResult], path: str):
+    def save_raw_results(self, results: list[BenchmarkResult], path: str):
         """Save raw benchmark results as JSON."""
         json_data = [asdict(result) for result in results]
         with open(path, 'w') as f:
@@ -351,7 +351,7 @@ class PerformanceBenchmark:
         print(f"📊 Raw results saved to: {path}")
 
     # Compatibility methods for tests
-    def benchmark_backend(self, backend: str, config: Dict[str, Any], num_runs: int = 1) -> Dict[str, float]:
+    def benchmark_backend(self, backend: str, config: dict[str, Any], num_runs: int = 1) -> dict[str, float]:
         """Benchmark a single backend with given configuration (compatibility method for tests)."""
         try:
             # Run the benchmark using existing method
@@ -372,11 +372,11 @@ class PerformanceBenchmark:
 
     def compare_backends(
         self, 
-        backends: List[str] = None, 
-        results: List[BenchmarkResult] = None, 
-        config: Dict[str, Any] = None, 
+        backends: list[str] = None, 
+        results: list[BenchmarkResult] = None, 
+        config: dict[str, Any] = None, 
         num_runs: int = 1
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Compare backends (overloaded method for both test and main usage)."""
         
         # If results are provided, use the original implementation  

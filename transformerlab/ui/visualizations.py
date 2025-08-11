@@ -4,7 +4,7 @@ Interactive visualization components for the Transformer Intuition Lab.
 
 import json
 import os
-from typing import Dict, Any
+from typing import Any
 
 import numpy as np
 import streamlit as st
