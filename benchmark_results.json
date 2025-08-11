@@ -1,0 +1,182 @@
+[
+  {
+    "backend": "numpy",
+    "operation": "forward_backward_training",
+    "model_config": {
+      "vocab_size": 20,
+      "hidden_dim": 16,
+      "num_layers": 1,
+      "num_heads": 2,
+      "ff_dim": 32,
+      "max_seq_len": 50
+    },
+    "forward_time_ms": 0.7091943213405708,
+    "backward_time_ms": null,
+    "training_time_ms": null,
+    "memory_usage_mb": 0.5317548116048177,
+    "parameter_count": 2884,
+    "accuracy_loss": 3.0069173739563895,
+    "success": true,
+    "error_message": null
+  },
+  {
+    "backend": "python",
+    "operation": "forward_backward_training",
+    "model_config": {
+      "vocab_size": 20,
+      "hidden_dim": 16,
+      "num_layers": 1,
+      "num_heads": 2,
+      "ff_dim": 32,
+      "max_seq_len": 50
+    },
+    "forward_time_ms": 19.800457996704306,
+    "backward_time_ms": 0.33661132329143584,
+    "training_time_ms": null,
+    "memory_usage_mb": 0.4061085383097331,
+    "parameter_count": 2916,
+    "accuracy_loss": 2.9915255927268163,
+    "success": true,
+    "error_message": null
+  },
+  {
+    "backend": "torch",
+    "operation": "forward_backward_training",
+    "model_config": {
+      "vocab_size": 20,
+      "hidden_dim": 16,
+      "num_layers": 1,
+      "num_heads": 2,
+      "ff_dim": 32,
+      "max_seq_len": 50
+    },
+    "forward_time_ms": 1.7577083393310506,
+    "backward_time_ms": 0.28848633519373834,
+    "training_time_ms": 16.239750334837783,
+    "memory_usage_mb": 41.35853703816732,
+    "parameter_count": 2916,
+    "accuracy_loss": 2.995434045791626,
+    "success": true,
+    "error_message": null
+  },
+  {
+    "backend": "numpy",
+    "operation": "forward_backward_training",
+    "model_config": {
+      "vocab_size": 50,
+      "hidden_dim": 32,
+      "num_layers": 2,
+      "num_heads": 4,
+      "ff_dim": 64,
+      "max_seq_len": 100
+    },
+    "forward_time_ms": 1.1411946713148307,
+    "backward_time_ms": null,
+    "training_time_ms": null,
+    "memory_usage_mb": 0.7808154424031576,
+    "parameter_count": 20338,
+    "accuracy_loss": 3.9384862937846656,
+    "success": true,
+    "error_message": null
+  },
+  {
+    "backend": "python",
+    "operation": "forward_backward_training",
+    "model_config": {
+      "vocab_size": 50,
+      "hidden_dim": 32,
+      "num_layers": 2,
+      "num_heads": 4,
+      "ff_dim": 64,
+      "max_seq_len": 100
+    },
+    "forward_time_ms": 100.78216667170636,
+    "backward_time_ms": 0.6982640091640254,
+    "training_time_ms": null,
+    "memory_usage_mb": 1.4759276707967122,
+    "parameter_count": 20402,
+    "accuracy_loss": 3.9364402673196994,
+    "success": true,
+    "error_message": null
+  },
+  {
+    "backend": "torch",
+    "operation": "forward_backward_training",
+    "model_config": {
+      "vocab_size": 50,
+      "hidden_dim": 32,
+      "num_layers": 2,
+      "num_heads": 4,
+      "ff_dim": 64,
+      "max_seq_len": 100
+    },
+    "forward_time_ms": 1.3868193394349266,
+    "backward_time_ms": 0.33368067427848774,
+    "training_time_ms": 3.152582998154685,
+    "memory_usage_mb": 0.10730997721354167,
+    "parameter_count": 20402,
+    "accuracy_loss": 3.918373187383016,
+    "success": true,
+    "error_message": null
+  },
+  {
+    "backend": "numpy",
+    "operation": "forward_backward_training",
+    "model_config": {
+      "vocab_size": 100,
+      "hidden_dim": 64,
+      "num_layers": 4,
+      "num_heads": 8,
+      "ff_dim": 128,
+      "max_seq_len": 200
+    },
+    "forward_time_ms": 1.9769306721476216,
+    "backward_time_ms": null,
+    "training_time_ms": null,
+    "memory_usage_mb": 4.473217328389485,
+    "parameter_count": 146788,
+    "accuracy_loss": 4.603778560838688,
+    "success": true,
+    "error_message": null
+  },
+  {
+    "backend": "python",
+    "operation": "forward_backward_training",
+    "model_config": {
+      "vocab_size": 100,
+      "hidden_dim": 64,
+      "num_layers": 4,
+      "num_heads": 8,
+      "ff_dim": 128,
+      "max_seq_len": 200
+    },
+    "forward_time_ms": 602.2289720034072,
+    "backward_time_ms": 1.4153196728633095,
+    "training_time_ms": null,
+    "memory_usage_mb": 7.543437321980794,
+    "parameter_count": 146916,
+    "accuracy_loss": 4.636415120619247,
+    "success": true,
+    "error_message": null
+  },
+  {
+    "backend": "torch",
+    "operation": "forward_backward_training",
+    "model_config": {
+      "vocab_size": 100,
+      "hidden_dim": 64,
+      "num_layers": 4,
+      "num_heads": 8,
+      "ff_dim": 128,
+      "max_seq_len": 200
+    },
+    "forward_time_ms": 2.588833342694367,
+    "backward_time_ms": 0.5628470098599792,
+    "training_time_ms": 5.836125007287289,
+    "memory_usage_mb": 0.19702911376953125,
+    "parameter_count": 146916,
+    "accuracy_loss": 4.633096377054851,
+    "success": true,
+    "error_message": null
+  }
+]
