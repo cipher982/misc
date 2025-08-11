@@ -4,18 +4,17 @@ Factory functions for creating backend implementations.
 Provides a unified interface for instantiating transformers with different backends.
 """
 
-from typing import Dict, Any, List, Type, Optional
 import importlib
+from typing import Any
 
 from .abstract import (
     AbstractTransformer,
-    BackendType,
     BackendConfig,
+    BackendType,
 )
 
-
 # Registry of available backends
-_BACKEND_REGISTRY: Dict[BackendType, Dict[str, Any]] = {
+_BACKEND_REGISTRY: dict[BackendType, dict[str, Any]] = {
     BackendType.NUMPY: {
         "module": "transformerlab.backends.numpy_backend",
         "class": "NumPyTransformer",
@@ -26,7 +25,7 @@ _BACKEND_REGISTRY: Dict[BackendType, Dict[str, Any]] = {
         "best_for": "Learning transformer internals and fast CPU inference",
     },
     BackendType.PYTHON: {
-        "module": "transformerlab.backends.python_backend.transformer", 
+        "module": "transformerlab.backends.python_backend.transformer",
         "class": "PythonTransformer",
         "description": "Pure Python implementation with explicit loops and operations",
         "features": ["Maximum transparency", "Step-by-step execution", "No vectorization"],
@@ -36,7 +35,7 @@ _BACKEND_REGISTRY: Dict[BackendType, Dict[str, Any]] = {
     },
     BackendType.TORCH: {
         "module": "transformerlab.backends.torch_backend.transformer",
-        "class": "TorchTransformer", 
+        "class": "TorchTransformer",
         "description": "PyTorch-based implementation with automatic differentiation",
         "features": ["GPU acceleration", "Automatic gradients", "Production-ready"],
         "pros": ["Very fast", "GPU support", "Automatic differentiation", "Scalable"],
@@ -46,12 +45,12 @@ _BACKEND_REGISTRY: Dict[BackendType, Dict[str, Any]] = {
 }
 
 
-def list_backends() -> List[str]:
+def list_backends() -> list[str]:
     """List all available backend names."""
     return [backend.value for backend in _BACKEND_REGISTRY.keys()]
 
 
-def get_backend_info(backend_name: str) -> Dict[str, Any]:
+def get_backend_info(backend_name: str) -> dict[str, Any]:
     """Get detailed information about a backend."""
     try:
         backend_type = BackendType(backend_name)
@@ -109,9 +108,9 @@ def create_transformer(
     except ValueError:
         available = list_backends()
         raise ValueError(f"Unknown backend '{backend_name}'. Available: {available}")
-    
+
     backend_info = _BACKEND_REGISTRY[backend_type]
-    
+
     # Import the backend module
     try:
         module = importlib.import_module(backend_info["module"])
@@ -125,7 +124,7 @@ def create_transformer(
         raise ImportError(
             f"Backend {backend_name} is malformed: {e}"
         )
-    
+
     # Create backend configuration
     backend_config = BackendConfig(
         backend_type=backend_type,
@@ -133,7 +132,7 @@ def create_transformer(
         dtype=dtype,
         **kwargs
     )
-    
+
     # Create and return transformer instance
     try:
         transformer = transformer_class(
@@ -157,10 +156,10 @@ def create_transformer(
 
 
 def compare_backends(
-    backends: List[str],
-    model_config: Dict[str, Any],
+    backends: list[str],
+    model_config: dict[str, Any],
     include_details: bool = True
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Compare multiple backends with the same configuration.
     
     Args:
@@ -172,21 +171,21 @@ def compare_backends(
         Dictionary with comparison results
     """
     results = {}
-    
+
     for backend_name in backends:
         try:
             # Get backend info
             backend_info = get_backend_info(backend_name)
-            
+
             # Try to create transformer
             transformer = create_transformer(backend_name, **model_config)
-            
+
             results[backend_name] = {
                 "available": True,
                 "parameter_count": transformer.get_parameter_count(),
                 "backend_info": transformer.get_backend_info(),
             }
-            
+
             if include_details:
                 results[backend_name].update({
                     "description": backend_info["description"],
@@ -195,13 +194,13 @@ def compare_backends(
                     "cons": backend_info["cons"],
                     "best_for": backend_info["best_for"],
                 })
-                
+
         except Exception as e:
             results[backend_name] = {
                 "available": False,
                 "error": str(e),
             }
-            
+
             if include_details:
                 try:
                     backend_info = get_backend_info(backend_name)
@@ -211,7 +210,7 @@ def compare_backends(
                     })
                 except:
                     pass
-    
+
     return results
 
 

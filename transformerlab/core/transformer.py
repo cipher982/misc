@@ -460,7 +460,7 @@ class Transformer:
         # Backward through blocks
         grad_hidden = grad_final_hidden
         all_gradients = {}
-        
+
         # Store gradients for embedding and output layers
         all_gradients['output_projection'] = grad_output_projection
         all_gradients['output_bias'] = grad_output_bias
@@ -489,14 +489,14 @@ class Transformer:
         """
         # Forward pass
         logits, stats = self.forward(x, targets)
-        
+
         # Backward pass
         loss, gradients = self.backward(logits, targets)
-        
+
         # Collect parameters and gradients for optimization
         parameters = self.get_parameters()
         parameter_names = self.get_parameter_names()
-        
+
         # Extract gradients in the same order as parameters
         grad_list = []
         for name in parameter_names:
@@ -506,39 +506,39 @@ class Transformer:
                 # If gradient not computed, use zero gradient
                 param_idx = parameter_names.index(name)
                 grad_list.append(np.zeros_like(parameters[param_idx]))
-        
+
         # Update parameters
         optimizer.update_parameters(parameters, grad_list)
-        
+
         return loss
 
     def get_parameters(self) -> list[np.ndarray]:
         """Get all trainable parameters."""
         parameters = []
-        
+
         # Add embedding parameters
         parameters.append(self.token_embedding)
-        
-        # Add transformer block parameters  
+
+        # Add transformer block parameters
         for block in self.blocks:
             parameters.extend(block.get_parameters())
-            
+
         # Add output projection parameters
         parameters.append(self.output_projection)
         parameters.append(self.output_bias)
-        
+
         return parameters
 
     def get_parameter_names(self) -> list[str]:
         """Get parameter names corresponding to get_parameters()."""
         names = ['token_embedding']
-        
+
         # Add transformer block parameter names
         for i, block in enumerate(self.blocks):
             block_names = block.get_parameter_names()
             names.extend([f'block_{i}_{name}' for name in block_names])
-            
+
         # Add output projection parameter names
         names.extend(['output_projection', 'output_bias'])
-        
+
         return names

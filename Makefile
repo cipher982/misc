@@ -15,8 +15,10 @@ help:
 	@echo "  make benchmark   - Run performance comparison"
 	@echo ""
 	@echo "🔧 Development:"
-	@echo "  make lint        - Run code linting"
-	@echo "  make format      - Format code with black"
+	@echo "  make lint        - Run code linting with ruff"
+	@echo "  make format      - Format code with black"  
+	@echo "  make check       - Run lint + format (fast, pre-commit ready)"
+	@echo "  make setup-precommit - Install pre-commit hooks"
 	@echo "  make clean       - Clean generated files"
 	@echo ""
 	@echo "📊 Analysis:"
@@ -75,6 +77,22 @@ format:
 		black transformerlab/ *.py; \
 	else \
 		echo "⚠️  black not installed, skipping formatting"; \
+	fi
+
+# Combined quality checks (fast - suitable for pre-commit)
+check: lint format
+	@echo "✅ Code quality checks completed!"
+
+# Install pre-commit hooks
+setup-precommit:
+	@echo "⚙️  Setting up pre-commit hooks..."
+	@if command -v pre-commit >/dev/null 2>&1; then \
+		pre-commit install; \
+		echo "✅ Pre-commit hooks installed!"; \
+		echo "   Hooks will run: make lint && make format"; \
+	else \
+		echo "⚠️  pre-commit not installed. Install with:"; \
+		echo "   uv tool install pre-commit"; \
 	fi
 
 # Cleanup

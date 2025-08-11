@@ -3,8 +3,8 @@ Simple optimizers for the Transformer Intuition Lab.
 Pure NumPy implementation for educational purposes.
 """
 
+
 import numpy as np
-from typing import Dict, List, Tuple
 
 
 class SGDOptimizer:
@@ -19,7 +19,7 @@ class SGDOptimizer:
         """
         self.learning_rate = learning_rate
 
-    def update_parameters(self, parameters: List[np.ndarray], gradients: List[np.ndarray]) -> None:
+    def update_parameters(self, parameters: list[np.ndarray], gradients: list[np.ndarray]) -> None:
         """
         Update parameters using gradients.
 
@@ -27,7 +27,7 @@ class SGDOptimizer:
             parameters: List of parameter arrays to update
             gradients: List of gradient arrays corresponding to parameters
         """
-        for param, grad in zip(parameters, gradients):
+        for param, grad in zip(parameters, gradients, strict=False):
             param -= self.learning_rate * grad
 
 
@@ -58,7 +58,7 @@ class AdamOptimizer:
         self.m = {}  # first moment estimates
         self.v = {}  # second moment estimates
 
-    def update_parameters(self, parameters: List[np.ndarray], gradients: List[np.ndarray]) -> None:
+    def update_parameters(self, parameters: list[np.ndarray], gradients: list[np.ndarray]) -> None:
         """
         Update parameters using Adam algorithm.
 
@@ -68,7 +68,7 @@ class AdamOptimizer:
         """
         self.t += 1
 
-        for i, (param, grad) in enumerate(zip(parameters, gradients)):
+        for i, (param, grad) in enumerate(zip(parameters, gradients, strict=False)):
             # Initialize moments if first time
             if i not in self.m:
                 self.m[i] = np.zeros_like(grad)
