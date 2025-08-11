@@ -37,9 +37,12 @@ class TestBackendCreation:
             assert isinstance(info, dict)
             assert "description" in info
             assert "features" in info
-            assert "backend_type" in info
+            assert "pros" in info
+            assert "cons" in info
             assert isinstance(info["description"], str)
             assert len(info["description"]) > 0
+            assert isinstance(info["features"], list)
+            assert len(info["features"]) > 0
     
     @pytest.mark.parametrize("backend_name", ["python", "numpy", "torch"])
     def test_create_transformer(self, backend_name, small_config):

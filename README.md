@@ -24,8 +24,14 @@ Give Python-savvy, math-averse developers a hands-on environment where they can 
 make install
 make demo
 
-# Test all backends
+# Comprehensive test suite
 make test
+
+# Quick backend compatibility test
+make test-backends
+
+# Performance testing
+make test-performance
 
 # Quick performance comparison
 make compare
@@ -113,12 +119,14 @@ tiny     torch    1.76ms      41.4MB     0.40x
 - **Benchmarking Suite**: Comprehensive performance testing
 
 ### Interactive Web Interface
-- **Real-time training** with live loss curves
+- **Real-time training** with live loss curves and metrics
 - **Backend selection** - Switch between NumPy, Python, PyTorch
 - **Architecture toggles** for normalization, activation, and positional encoding
-- **Attention visualization** with heatmaps
+- **Advanced JavaScript visualizations** with D3.js and Plotly
+- **Interactive attention heatmaps** with multi-head selection
+- **Performance comparison charts** with memory and speed analysis
+- **Network architecture diagrams** with data flow animation
 - **Experiment comparison** with side-by-side metrics
-- **Code inspection** - click any component to see its implementation
 
 ### Command Line Interface
 - **Rich terminal output** with progress bars and tables
@@ -161,14 +169,23 @@ Transformer Block: Norm → Attention → Norm → Feed-Forward → Residual
 - **Positional Encoding**: Sinusoidal, RoPE, ALiBi
 - **Attention**: Multi-head with configurable heads and dimensions
 
-## 📊 Visualization Features
+## 📊 Advanced Visualization Features
 
+### Interactive JavaScript Components
+- **Attention heatmaps** with D3.js - clickable token relationships
+- **Network architecture diagrams** with animated data flow
+- **Performance comparison charts** with Plotly interactivity
+- **Real-time training metrics** with live updates
+- **Memory usage profiling** with detailed breakdowns
+- **Speed vs accuracy scatter plots** for backend comparison
+
+### Educational Visualizations
 - **Loss curves** with real-time updates
-- **Attention heatmaps** showing token relationships
 - **Layer statistics** (variance, gradient norms)
 - **Activation distributions** across layers
-- **Model comparison** charts
 - **Gradient flow** visualization
+- **Attention flow diagrams** showing information pathways
+- **Backend comparison dashboards** with interactive controls
 
 ## 🧪 Experiment Management
 
@@ -235,15 +252,28 @@ uv run mypy .
 
 ### Running Tests
 ```bash
-# Run all tests
-uv run pytest
+# Comprehensive test suite with pytest
+make test
 
-# Run with coverage
+# Quick backend compatibility test
+make test-backends  
+
+# Training functionality tests
+make test-training
+
+# Performance and benchmarking tests
+make test-performance
+
+# Slow/comprehensive tests
+make test-slow
+
+# Integration tests
+make test-integration
+
+# Manual pytest usage
+uv run pytest transformerlab/tests/ -v
 uv run pytest --cov=transformerlab
-
-# Run specific test categories
 uv run pytest -m "not slow"
-uv run pytest -m integration
 ```
 
 ### Code Quality
