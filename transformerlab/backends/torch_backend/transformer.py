@@ -8,6 +8,7 @@ automatic differentiation, and modern ML best practices.
 import math
 from typing import Any
 
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -216,9 +217,10 @@ class TorchTransformer(AbstractTransformer, nn.Module):
 
     def forward(self, x: torch.Tensor, targets: torch.Tensor | None = None) -> tuple[torch.Tensor, dict[str, Any]]:
         """Forward pass through complete transformer."""
-        if isinstance(x, (list, tuple)):
+        # Convert various input types to PyTorch tensors
+        if isinstance(x, (list, tuple, np.ndarray)):
             x = torch.tensor(x, dtype=torch.long, device=self.device)
-        if targets is not None and isinstance(targets, (list, tuple)):
+        if targets is not None and isinstance(targets, (list, tuple, np.ndarray)):
             targets = torch.tensor(targets, dtype=torch.long, device=self.device)
 
         batch_size, seq_len = x.size()
@@ -309,9 +311,10 @@ class TorchTransformer(AbstractTransformer, nn.Module):
 
     def train_step(self, x: torch.Tensor, targets: torch.Tensor, optimizer) -> float:
         """Single training step using PyTorch's autograd."""
-        if isinstance(x, (list, tuple)):
+        # Convert various input types to PyTorch tensors
+        if isinstance(x, (list, tuple, np.ndarray)):
             x = torch.tensor(x, dtype=torch.long, device=self.device)
-        if isinstance(targets, (list, tuple)):
+        if isinstance(targets, (list, tuple, np.ndarray)):
             targets = torch.tensor(targets, dtype=torch.long, device=self.device)
 
         # Zero gradients
@@ -347,7 +350,7 @@ class TorchTransformer(AbstractTransformer, nn.Module):
         top_p: float | None = None
     ) -> torch.Tensor:
         """Generate text with advanced sampling strategies."""
-        if isinstance(prompt, (list, tuple)):
+        if isinstance(prompt, (list, tuple, np.ndarray)):
             prompt = torch.tensor(prompt, dtype=torch.long, device=self.device)
 
         self.eval()  # Set to evaluation mode
