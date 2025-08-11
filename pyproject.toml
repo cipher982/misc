@@ -69,7 +69,7 @@ packages = ["transformerlab"]
 
 [tool.black]
 line-length = 88
-target-version = ['py313']
+target-version = ['py312']
 include = '\.pyi?$'
 extend-exclude = '''
 /(
@@ -86,7 +86,7 @@ extend-exclude = '''
 '''
 
 [tool.ruff]
-target-version = "py313"
+target-version = "py312"
 line-length = 88
 select = [
     "E",  # pycodestyle errors

@@ -6,9 +6,9 @@ This ensures mathematical equivalence while allowing different implementation ap
 """
 
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Tuple, Optional, Union
 from dataclasses import dataclass
 from enum import Enum
+from typing import Any
 
 
 class BackendType(Enum):
@@ -30,22 +30,22 @@ class BackendConfig:
 
 class AbstractTensor(ABC):
     """Abstract tensor interface for backend-agnostic operations."""
-    
+
     @abstractmethod
-    def shape(self) -> Tuple[int, ...]:
+    def shape(self) -> tuple[int, ...]:
         """Get tensor shape."""
         pass
-    
+
     @abstractmethod
     def to_numpy(self) -> Any:
         """Convert to numpy array for visualization/comparison."""
         pass
-    
+
     @abstractmethod
     def __add__(self, other):
         """Element-wise addition."""
         pass
-    
+
     @abstractmethod
     def __matmul__(self, other):
         """Matrix multiplication."""
@@ -54,15 +54,15 @@ class AbstractTensor(ABC):
 
 class AbstractOptimizer(ABC):
     """Abstract optimizer interface."""
-    
+
     def __init__(self, learning_rate: float = 0.01):
         self.learning_rate = learning_rate
-    
+
     @abstractmethod
-    def update_parameters(self, parameters: List[Any], gradients: List[Any]) -> None:
+    def update_parameters(self, parameters: list[Any], gradients: list[Any]) -> None:
         """Update parameters using gradients."""
         pass
-    
+
     @abstractmethod
     def zero_grad(self) -> None:
         """Zero out gradients (if applicable to backend)."""
@@ -71,30 +71,30 @@ class AbstractOptimizer(ABC):
 
 class AbstractNormalization(ABC):
     """Abstract normalization layer."""
-    
+
     def __init__(self, hidden_dim: int, eps: float = 1e-6):
         self.hidden_dim = hidden_dim
         self.eps = eps
-    
+
     @abstractmethod
     def forward(self, x: Any) -> Any:
         """Forward pass through normalization."""
         pass
-    
+
     @abstractmethod
-    def backward(self, grad_output: Any) -> Tuple[Any, Dict[str, Any]]:
+    def backward(self, grad_output: Any) -> tuple[Any, dict[str, Any]]:
         """Backward pass through normalization."""
         pass
-    
+
     @abstractmethod
-    def get_parameters(self) -> List[Any]:
+    def get_parameters(self) -> list[Any]:
         """Get trainable parameters."""
         pass
 
 
 class AbstractAttention(ABC):
     """Abstract multi-head attention layer."""
-    
+
     def __init__(
         self,
         hidden_dim: int,
@@ -105,12 +105,12 @@ class AbstractAttention(ABC):
         self.num_heads = num_heads
         self.head_dim = hidden_dim // num_heads
         self.dropout = dropout
-        
+
         if hidden_dim % num_heads != 0:
             raise ValueError(f"hidden_dim ({hidden_dim}) must be divisible by num_heads ({num_heads})")
-    
+
     @abstractmethod
-    def forward(self, x: Any, mask: Optional[Any] = None) -> Tuple[Any, Dict[str, Any]]:
+    def forward(self, x: Any, mask: Any | None = None) -> tuple[Any, dict[str, Any]]:
         """Forward pass through attention.
         
         Args:
@@ -121,17 +121,17 @@ class AbstractAttention(ABC):
             Tuple of (output, attention_stats)
         """
         pass
-    
+
     @abstractmethod
-    def backward(self, grad_output: Any) -> Tuple[Any, Dict[str, Any]]:
+    def backward(self, grad_output: Any) -> tuple[Any, dict[str, Any]]:
         """Backward pass through attention."""
         pass
-    
+
     @abstractmethod
-    def get_parameters(self) -> List[Any]:
+    def get_parameters(self) -> list[Any]:
         """Get trainable parameters."""
         pass
-    
+
     @abstractmethod
     def get_attention_weights(self) -> Any:
         """Get attention weights for visualization."""
@@ -140,7 +140,7 @@ class AbstractAttention(ABC):
 
 class AbstractFeedForward(ABC):
     """Abstract feed-forward network."""
-    
+
     def __init__(
         self,
         hidden_dim: int,
@@ -152,9 +152,9 @@ class AbstractFeedForward(ABC):
         self.ff_dim = ff_dim
         self.activation_type = activation_type
         self.residual_type = residual_type
-    
+
     @abstractmethod
-    def forward(self, x: Any, norm_module: Optional[Any] = None) -> Tuple[Any, Dict[str, Any]]:
+    def forward(self, x: Any, norm_module: Any | None = None) -> tuple[Any, dict[str, Any]]:
         """Forward pass through feed-forward network.
         
         Args:
@@ -165,21 +165,21 @@ class AbstractFeedForward(ABC):
             Tuple of (output, ff_stats)
         """
         pass
-    
+
     @abstractmethod
-    def backward(self, grad_output: Any) -> Tuple[Any, Dict[str, Any]]:
+    def backward(self, grad_output: Any) -> tuple[Any, dict[str, Any]]:
         """Backward pass through feed-forward network."""
         pass
-    
+
     @abstractmethod
-    def get_parameters(self) -> List[Any]:
+    def get_parameters(self) -> list[Any]:
         """Get trainable parameters."""
         pass
 
 
 class AbstractTransformerBlock(ABC):
     """Abstract transformer block."""
-    
+
     def __init__(
         self,
         hidden_dim: int,
@@ -197,9 +197,9 @@ class AbstractTransformerBlock(ABC):
         self.activation_type = activation_type
         self.residual_type = residual_type
         self.dropout = dropout
-    
+
     @abstractmethod
-    def forward(self, x: Any, mask: Optional[Any] = None) -> Tuple[Any, Dict[str, Any]]:
+    def forward(self, x: Any, mask: Any | None = None) -> tuple[Any, dict[str, Any]]:
         """Forward pass through transformer block.
         
         Args:
@@ -210,21 +210,21 @@ class AbstractTransformerBlock(ABC):
             Tuple of (output, block_stats)
         """
         pass
-    
+
     @abstractmethod
-    def backward(self, grad_output: Any) -> Tuple[Any, Dict[str, Any]]:
+    def backward(self, grad_output: Any) -> tuple[Any, dict[str, Any]]:
         """Backward pass through transformer block."""
         pass
-    
+
     @abstractmethod
-    def get_parameters(self) -> List[Any]:
+    def get_parameters(self) -> list[Any]:
         """Get trainable parameters."""
         pass
 
 
 class AbstractTransformer(ABC):
     """Abstract transformer model."""
-    
+
     def __init__(
         self,
         vocab_size: int,
@@ -238,7 +238,7 @@ class AbstractTransformer(ABC):
         residual_type: str = "Pre-LN",
         pos_encoding_type: str = "Sinusoidal",
         dropout: float = 0.0,
-        backend_config: Optional[BackendConfig] = None,
+        backend_config: BackendConfig | None = None,
     ):
         self.vocab_size = vocab_size
         self.hidden_dim = hidden_dim
@@ -252,14 +252,14 @@ class AbstractTransformer(ABC):
         self.pos_encoding_type = pos_encoding_type
         self.dropout = dropout
         self.backend_config = backend_config or BackendConfig(BackendType.NUMPY)
-        
+
         # Training state
         self.training = True
-        self.loss_history: List[float] = []
+        self.loss_history: list[float] = []
         self.step_count = 0
-    
+
     @abstractmethod
-    def forward(self, x: Any, targets: Optional[Any] = None) -> Tuple[Any, Dict[str, Any]]:
+    def forward(self, x: Any, targets: Any | None = None) -> tuple[Any, dict[str, Any]]:
         """Forward pass through transformer.
         
         Args:
@@ -270,9 +270,9 @@ class AbstractTransformer(ABC):
             Tuple of (logits, model_stats)
         """
         pass
-    
+
     @abstractmethod
-    def backward(self, logits: Any, targets: Any) -> Tuple[float, Dict[str, Any]]:
+    def backward(self, logits: Any, targets: Any) -> tuple[float, dict[str, Any]]:
         """Backward pass to compute gradients.
         
         Args:
@@ -283,7 +283,7 @@ class AbstractTransformer(ABC):
             Tuple of (loss, gradients_dict)
         """
         pass
-    
+
     @abstractmethod
     def train_step(self, x: Any, targets: Any, optimizer: AbstractOptimizer) -> float:
         """Single training step.
@@ -297,12 +297,12 @@ class AbstractTransformer(ABC):
             Loss value
         """
         pass
-    
+
     @abstractmethod
     def generate(
-        self, 
-        prompt: Any, 
-        max_length: int = 50, 
+        self,
+        prompt: Any,
+        max_length: int = 50,
         temperature: float = 1.0
     ) -> Any:
         """Generate text from prompt.
@@ -316,28 +316,28 @@ class AbstractTransformer(ABC):
             Generated token sequence
         """
         pass
-    
+
     @abstractmethod
-    def get_parameters(self) -> List[Any]:
+    def get_parameters(self) -> list[Any]:
         """Get all trainable parameters."""
         pass
-    
+
     @abstractmethod
     def get_parameter_count(self) -> int:
         """Get total number of parameters."""
         pass
-    
+
     @abstractmethod
     def save(self, path: str) -> None:
         """Save model parameters to disk."""
         pass
-    
+
     @abstractmethod
     def load(self, path: str) -> None:
         """Load model parameters from disk."""
         pass
-    
-    def get_backend_info(self) -> Dict[str, Any]:
+
+    def get_backend_info(self) -> dict[str, Any]:
         """Get backend-specific information."""
         return {
             "backend_type": self.backend_config.backend_type.value,
@@ -346,13 +346,13 @@ class AbstractTransformer(ABC):
             "parameter_count": self.get_parameter_count(),
             "memory_usage": self._estimate_memory_usage(),
         }
-    
+
     @abstractmethod
-    def _estimate_memory_usage(self) -> Dict[str, float]:
+    def _estimate_memory_usage(self) -> dict[str, float]:
         """Estimate memory usage in MB."""
         pass
-    
-    def get_model_stats(self) -> Dict[str, Any]:
+
+    def get_model_stats(self) -> dict[str, Any]:
         """Get comprehensive model statistics."""
         return {
             "loss_history": self.loss_history,

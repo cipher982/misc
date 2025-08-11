@@ -6,79 +6,83 @@ every step of the attention mechanism clearly.
 """
 
 import math
-from typing import List, Tuple, Dict, Optional, Any
+from typing import Any
 
 from ..abstract import AbstractAttention
 from .utils import (
-    zeros, randn, matmul_3d, add_3d, softmax_2d, 
-    copy_tensor, transpose_2d, get_shape
+    add_3d,
+    copy_tensor,
+    get_shape,
+    matmul_3d,
+    randn,
+    zeros,
 )
 
 
 class PythonAttention(AbstractAttention):
     """Pure Python multi-head attention implementation."""
-    
+
     def __init__(self, hidden_dim: int, num_heads: int, dropout: float = 0.0):
         super().__init__(hidden_dim, num_heads, dropout)
-        
+
         # Initialize weight matrices (hidden_dim, hidden_dim)
         self.w_q = randn((hidden_dim, hidden_dim))
         self.w_k = randn((hidden_dim, hidden_dim))
         self.w_v = randn((hidden_dim, hidden_dim))
         self.w_o = randn((hidden_dim, hidden_dim))
-        
+
         # Initialize biases (hidden_dim,)
         self.b_q = [0.0] * hidden_dim
         self.b_k = [0.0] * hidden_dim
         self.b_v = [0.0] * hidden_dim
         self.b_o = [0.0] * hidden_dim
-        
+
         # Cache for backward pass
         self._cache = {}
-    
-    def forward(self, x: List[List[List[float]]], mask: Optional[Any] = None) -> Tuple[List[List[List[float]]], Dict[str, Any]]:
+
+    def forward(self, x: list[list[list[float]]], mask: Any | None = None) -> tuple[list[list[list[float]]], dict[str, Any]]:
         """Forward pass through attention with explicit steps."""
         batch_size, seq_len, _ = get_shape(x)
-        
+
         print(f"[PythonAttention] Forward pass: batch_size={batch_size}, seq_len={seq_len}")
-        
+
         # Step 1: Linear transformations to get Q, K, V
         print("  Step 1: Computing Q, K, V projections...")
         q = add_3d(matmul_3d(x, self.w_q), self.b_q)  # (batch, seq, hidden)
-        k = add_3d(matmul_3d(x, self.w_k), self.b_k)  # (batch, seq, hidden)  
+        k = add_3d(matmul_3d(x, self.w_k), self.b_k)  # (batch, seq, hidden)
         v = add_3d(matmul_3d(x, self.w_v), self.b_v)  # (batch, seq, hidden)
-        
+
         # Step 2: Reshape for multi-head attention
         print(f"  Step 2: Reshaping for {self.num_heads} heads...")
         q_heads = self._reshape_for_heads(q)  # (batch, seq, num_heads, head_dim)
         k_heads = self._reshape_for_heads(k)
         v_heads = self._reshape_for_heads(v)
-        
+
         # Step 3: Compute attention scores
         print("  Step 3: Computing attention scores...")
         scores = self._compute_attention_scores(q_heads, k_heads)  # (batch, num_heads, seq, seq)
-        
+
         # Step 4: Apply mask if provided
         if mask is not None:
             print("  Step 4: Applying attention mask...")
             scores = self._apply_mask(scores, mask)
-        
+
         # Step 5: Apply softmax
         print("  Step 5: Applying softmax to get attention weights...")
         attention_weights = self._apply_softmax(scores)  # (batch, num_heads, seq, seq)
-        
+
         # Step 6: Apply attention to values
         print("  Step 6: Applying attention weights to values...")
         attention_output = self._apply_attention_to_values(attention_weights, v_heads)  # (batch, seq, num_heads, head_dim)
-        
+
         # Step 7: Concatenate heads
         print("  Step 7: Concatenating attention heads...")
         concat_output = self._concatenate_heads(attention_output)  # (batch, seq, hidden)
-        
+
         # Step 8: Final output projection
         print("  Step 8: Final output projection...")
         output = add_3d(matmul_3d(concat_output, self.w_o), self.b_o)
-        
+
         # Cache intermediate values for backward pass
         self._cache = {
             'input': copy_tensor(x),
@@ -88,16 +92,16 @@ class PythonAttention(AbstractAttention):
             'attention_weights': copy_tensor(attention_weights),
             'concat_output': copy_tensor(concat_output),
         }
-        
+
         # Collect statistics
         stats = self._compute_stats(q, k, v, attention_weights, output)
-        
+
         return output, stats
-    
-    def _reshape_for_heads(self, x: List[List[List[float]]]) -> List[List[List[List[float]]]]:
+
+    def _reshape_for_heads(self, x: list[list[list[float]]]) -> list[list[list[list[float]]]]:
         """Reshape tensor for multi-head attention: (batch, seq, hidden) -> (batch, seq, num_heads, head_dim)."""
         batch_size, seq_len, hidden_dim = get_shape(x)
-        
+
         # Create 4D tensor
         result = []
         for batch in range(batch_size):
@@ -113,22 +117,22 @@ class PythonAttention(AbstractAttention):
                     head_result.append(head_values)
                 batch_result.append(head_result)
             result.append(batch_result)
-        
+
         return result
-    
+
     def _compute_attention_scores(
-        self, 
-        q: List[List[List[List[float]]]], 
-        k: List[List[List[List[float]]]]
-    ) -> List[List[List[List[float]]]]:
+        self,
+        q: list[list[list[list[float]]]],
+        k: list[list[list[list[float]]]]
+    ) -> list[list[list[list[float]]]]:
         """Compute scaled dot-product attention scores."""
         batch_size, seq_len, num_heads, head_dim = len(q), len(q[0]), len(q[0][0]), len(q[0][0][0])
         scale = 1.0 / math.sqrt(head_dim)
-        
+
         # Result shape: (batch, num_heads, seq, seq)
-        scores = [[[[0.0 for _ in range(seq_len)] for _ in range(seq_len)] 
+        scores = [[[[0.0 for _ in range(seq_len)] for _ in range(seq_len)]
                    for _ in range(num_heads)] for _ in range(batch_size)]
-        
+
         for batch in range(batch_size):
             for head in range(num_heads):
                 for i in range(seq_len):  # Query position
@@ -137,67 +141,67 @@ class PythonAttention(AbstractAttention):
                         dot_product = 0.0
                         for dim in range(head_dim):
                             dot_product += q[batch][i][head][dim] * k[batch][j][head][dim]
-                        
+
                         scores[batch][head][i][j] = dot_product * scale
-        
+
         return scores
-    
-    def _apply_mask(self, scores: List[List[List[List[float]]]], mask: Any) -> List[List[List[List[float]]]]:
+
+    def _apply_mask(self, scores: list[list[list[list[float]]]], mask: Any) -> list[list[list[list[float]]]]:
         """Apply attention mask to scores."""
         # For simplicity, assume mask is a 2D matrix (seq_len, seq_len)
         batch_size, num_heads, seq_len, _ = len(scores), len(scores[0]), len(scores[0][0]), len(scores[0][0][0])
-        
+
         result = copy_tensor(scores)
-        
+
         for batch in range(batch_size):
             for head in range(num_heads):
                 for i in range(seq_len):
                     for j in range(seq_len):
                         if mask[i][j] < 0:  # Mask value indicates blocking
                             result[batch][head][i][j] = -1e9  # Large negative value
-        
+
         return result
-    
-    def _apply_softmax(self, scores: List[List[List[List[float]]]]) -> List[List[List[List[float]]]]:
+
+    def _apply_softmax(self, scores: list[list[list[list[float]]]]) -> list[list[list[list[float]]]]:
         """Apply softmax to attention scores."""
         batch_size, num_heads, seq_len, _ = len(scores), len(scores[0]), len(scores[0][0]), len(scores[0][0][0])
-        
-        result = [[[[0.0 for _ in range(seq_len)] for _ in range(seq_len)] 
+
+        result = [[[[0.0 for _ in range(seq_len)] for _ in range(seq_len)]
                    for _ in range(num_heads)] for _ in range(batch_size)]
-        
+
         for batch in range(batch_size):
             for head in range(num_heads):
                 for i in range(seq_len):
                     # Apply softmax to scores[batch][head][i] (attention weights for position i)
                     row_scores = scores[batch][head][i]
-                    
+
                     # Find max for numerical stability
                     max_score = max(row_scores)
-                    
+
                     # Compute exponentials
                     exp_scores = [math.exp(score - max_score) for score in row_scores]
-                    
+
                     # Compute sum
                     exp_sum = sum(exp_scores)
-                    
+
                     # Normalize
                     for j in range(seq_len):
                         result[batch][head][i][j] = exp_scores[j] / exp_sum
-        
+
         return result
-    
+
     def _apply_attention_to_values(
-        self, 
-        attention_weights: List[List[List[List[float]]]], 
-        v: List[List[List[List[float]]]]
-    ) -> List[List[List[List[float]]]]:
+        self,
+        attention_weights: list[list[list[list[float]]]],
+        v: list[list[list[list[float]]]]
+    ) -> list[list[list[list[float]]]]:
         """Apply attention weights to values."""
         batch_size, seq_len, num_heads, head_dim = len(v), len(v[0]), len(v[0][0]), len(v[0][0][0])
-        
+
         # Result shape: (batch, seq, num_heads, head_dim)
-        result = [[[[0.0 for _ in range(head_dim)] for _ in range(num_heads)] 
+        result = [[[[0.0 for _ in range(head_dim)] for _ in range(num_heads)]
                    for _ in range(seq_len)] for _ in range(batch_size)]
-        
+
         for batch in range(batch_size):
             for head in range(num_heads):
                 for i in range(seq_len):  # Output position
@@ -208,36 +212,36 @@ class PythonAttention(AbstractAttention):
                             value = v[batch][j][head][dim]
                             weighted_sum += weight * value
                         result[batch][i][head][dim] = weighted_sum
-        
+
         return result
-    
-    def _concatenate_heads(self, x: List[List[List[List[float]]]]) -> List[List[List[float]]]:
+
+    def _concatenate_heads(self, x: list[list[list[list[float]]]]) -> list[list[list[float]]]:
         """Concatenate attention heads: (batch, seq, num_heads, head_dim) -> (batch, seq, hidden_dim)."""
         batch_size, seq_len, num_heads, head_dim = len(x), len(x[0]), len(x[0][0]), len(x[0][0][0])
         hidden_dim = num_heads * head_dim
-        
+
         result = zeros((batch_size, seq_len, hidden_dim))
-        
+
         for batch in range(batch_size):
             for seq in range(seq_len):
                 for head in range(num_heads):
                     start_idx = head * head_dim
                     for dim in range(head_dim):
                         result[batch][seq][start_idx + dim] = x[batch][seq][head][dim]
-        
+
         return result
-    
+
     def _compute_stats(
-        self, 
-        q: List[List[List[float]]],
-        k: List[List[List[float]]],
-        v: List[List[List[float]]],
-        attention_weights: List[List[List[List[float]]]],
-        output: List[List[List[float]]]
-    ) -> Dict[str, Any]:
+        self,
+        q: list[list[list[float]]],
+        k: list[list[list[float]]],
+        v: list[list[list[float]]],
+        attention_weights: list[list[list[list[float]]]],
+        output: list[list[list[float]]]
+    ) -> dict[str, Any]:
         """Compute attention statistics."""
         from .utils import mean, std
-        
+
         return {
             "q_mean": mean(q),
             "q_std": std(q),
@@ -251,19 +255,19 @@ class PythonAttention(AbstractAttention):
             "output_std": std(output),
             "attention_weights": attention_weights[0],  # First batch for visualization
         }
-    
-    def backward(self, grad_output: List[List[List[float]]]) -> Tuple[List[List[List[float]]], Dict[str, Any]]:
+
+    def backward(self, grad_output: list[list[list[float]]]) -> tuple[list[list[list[float]]], dict[str, Any]]:
         """Backward pass (simplified for educational purposes)."""
         if not self._cache:
             raise RuntimeError("Forward pass must be called before backward pass")
-        
+
         # For pure Python backend, we implement simplified gradients
         # In practice, this would be much more complex
-        
+
         # Return zero gradients for now (placeholder)
         input_shape = get_shape(self._cache['input'])
         grad_input = zeros(input_shape)
-        
+
         gradients = {
             'w_q': zeros(get_shape(self.w_q)),
             'w_k': zeros(get_shape(self.w_k)),
@@ -274,13 +278,13 @@ class PythonAttention(AbstractAttention):
             'b_v': [0.0] * len(self.b_v),
             'b_o': [0.0] * len(self.b_o),
         }
-        
+
         return grad_input, gradients
-    
-    def get_parameters(self) -> List[Any]:
+
+    def get_parameters(self) -> list[Any]:
         """Get trainable parameters."""
         return [self.w_q, self.w_k, self.w_v, self.w_o, self.b_q, self.b_k, self.b_v, self.b_o]
-    
+
     def get_attention_weights(self) -> Any:
         """Get attention weights for visualization."""
         if 'attention_weights' in self._cache:

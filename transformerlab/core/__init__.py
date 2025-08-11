@@ -10,6 +10,7 @@ from .attention import (
 )
 from .feed_forward import FeedForward, get_residual_type
 from .normalization import LayerNorm, RMSNorm, get_normalization_module
+from .optimizer import AdamOptimizer, SGDOptimizer, get_optimizer
 from .positional_encoding import (
     ALiBi,
     PositionalEncoding,
@@ -19,7 +20,6 @@ from .positional_encoding import (
 )
 from .tokenizer import CharTokenizer, load_corpus
 from .transformer import Transformer, TransformerBlock
-from .optimizer import SGDOptimizer, AdamOptimizer, get_optimizer
 
 __all__ = [
     "Transformer",
