@@ -4,11 +4,7 @@
 
 .PHONY: help install test benchmark demo clean lint format
 
-# Python version check - ensures Python 3.13 is being used
-PYTHON_VERSION_CHECK := $(shell python --version 2>&1 | grep -c "Python 3.13")
-ifeq ($(PYTHON_VERSION_CHECK),0)
-    $(error ❌ Python 3.13 required! Current: $(shell python --version 2>&1). Use: python3.13 or update your PATH)
-endif
+# Note: All commands use 'uv run' which automatically manages Python 3.13 environment
 
 # Default target
 help:

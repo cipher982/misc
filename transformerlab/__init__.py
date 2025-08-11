@@ -1,11 +1,8 @@
 """
 Transformer Intuition Lab - Interactive playground for understanding transformer architectures.
 
-REQUIRES: Python 3.13 ONLY
+Best used with Python 3.13 via uv: `uv run streamlit run transformerlab/app.py`
 """
-
-# Enforce Python 3.13 requirement immediately
-from .version_check import check_python_version
 
 __version__ = "0.1.0"
 __author__ = "Transformer Intuition Lab"
