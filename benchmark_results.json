@@ -1,0 +1,182 @@
+[
+  {
+    "backend": "numpy",
+    "operation": "forward_backward_training",
+    "model_config": {
+      "vocab_size": 20,
+      "hidden_dim": 16,
+      "num_layers": 1,
+      "num_heads": 2,
+      "ff_dim": 32,
+      "max_seq_len": 50
+    },
+    "forward_time_ms": 0.6989859975874424,
+    "backward_time_ms": null,
+    "training_time_ms": null,
+    "memory_usage_mb": 0.6490310033162435,
+    "parameter_count": 2884,
+    "accuracy_loss": 3.012225875258314,
+    "success": true,
+    "error_message": null
+  },
+  {
+    "backend": "python",
+    "operation": "forward_backward_training",
+    "model_config": {
+      "vocab_size": 20,
+      "hidden_dim": 16,
+      "num_layers": 1,
+      "num_heads": 2,
+      "ff_dim": 32,
+      "max_seq_len": 50
+    },
+    "forward_time_ms": 20.33065233263187,
+    "backward_time_ms": 0.32797233628419536,
+    "training_time_ms": null,
+    "memory_usage_mb": 0.4124641418457031,
+    "parameter_count": 2916,
+    "accuracy_loss": 2.9851643798898064,
+    "success": true,
+    "error_message": null
+  },
+  {
+    "backend": "torch",
+    "operation": "forward_backward_training",
+    "model_config": {
+      "vocab_size": 20,
+      "hidden_dim": 16,
+      "num_layers": 1,
+      "num_heads": 2,
+      "ff_dim": 32,
+      "max_seq_len": 50
+    },
+    "forward_time_ms": 1.1100556779031951,
+    "backward_time_ms": 0.2969026584954311,
+    "training_time_ms": 7.9708056679616375,
+    "memory_usage_mb": 34.67246055603027,
+    "parameter_count": 2916,
+    "accuracy_loss": 2.9809841314951577,
+    "success": true,
+    "error_message": null
+  },
+  {
+    "backend": "numpy",
+    "operation": "forward_backward_training",
+    "model_config": {
+      "vocab_size": 50,
+      "hidden_dim": 32,
+      "num_layers": 2,
+      "num_heads": 4,
+      "ff_dim": 64,
+      "max_seq_len": 100
+    },
+    "forward_time_ms": 1.106083325187986,
+    "backward_time_ms": null,
+    "training_time_ms": null,
+    "memory_usage_mb": 0.7808154424031576,
+    "parameter_count": 20338,
+    "accuracy_loss": 3.9384862937846656,
+    "success": true,
+    "error_message": null
+  },
+  {
+    "backend": "python",
+    "operation": "forward_backward_training",
+    "model_config": {
+      "vocab_size": 50,
+      "hidden_dim": 32,
+      "num_layers": 2,
+      "num_heads": 4,
+      "ff_dim": 64,
+      "max_seq_len": 100
+    },
+    "forward_time_ms": 0.0,
+    "backward_time_ms": null,
+    "training_time_ms": null,
+    "memory_usage_mb": 0.0,
+    "parameter_count": 0,
+    "accuracy_loss": 0.0,
+    "success": false,
+    "error_message": "[Errno 32] Broken pipe"
+  },
+  {
+    "backend": "torch",
+    "operation": "forward_backward_training",
+    "model_config": {
+      "vocab_size": 50,
+      "hidden_dim": 32,
+      "num_layers": 2,
+      "num_heads": 4,
+      "ff_dim": 64,
+      "max_seq_len": 100
+    },
+    "forward_time_ms": 1.5340973429071407,
+    "backward_time_ms": 0.38481933491614956,
+    "training_time_ms": 3.4541943362758807,
+    "memory_usage_mb": 0.10729726155598958,
+    "parameter_count": 20402,
+    "accuracy_loss": 3.8951379458109536,
+    "success": true,
+    "error_message": null
+  },
+  {
+    "backend": "numpy",
+    "operation": "forward_backward_training",
+    "model_config": {
+      "vocab_size": 100,
+      "hidden_dim": 64,
+      "num_layers": 4,
+      "num_heads": 8,
+      "ff_dim": 128,
+      "max_seq_len": 200
+    },
+    "forward_time_ms": 2.025055669946596,
+    "backward_time_ms": null,
+    "training_time_ms": null,
+    "memory_usage_mb": 4.473319053649902,
+    "parameter_count": 146788,
+    "accuracy_loss": 4.603778560838688,
+    "success": true,
+    "error_message": null
+  },
+  {
+    "backend": "python",
+    "operation": "forward_backward_training",
+    "model_config": {
+      "vocab_size": 100,
+      "hidden_dim": 64,
+      "num_layers": 4,
+      "num_heads": 8,
+      "ff_dim": 128,
+      "max_seq_len": 200
+    },
+    "forward_time_ms": 0.0,
+    "backward_time_ms": null,
+    "training_time_ms": null,
+    "memory_usage_mb": 0.0,
+    "parameter_count": 0,
+    "accuracy_loss": 0.0,
+    "success": false,
+    "error_message": "[Errno 32] Broken pipe"
+  },
+  {
+    "backend": "torch",
+    "operation": "forward_backward_training",
+    "model_config": {
+      "vocab_size": 100,
+      "hidden_dim": 64,
+      "num_layers": 4,
+      "num_heads": 8,
+      "ff_dim": 128,
+      "max_seq_len": 200
+    },
+    "forward_time_ms": 2.757375012151897,
+    "backward_time_ms": 0.677569672310104,
+    "training_time_ms": 6.354694671851273,
+    "memory_usage_mb": 0.19703261057535806,
+    "parameter_count": 146916,
+    "accuracy_loss": 4.621111234029134,
+    "success": true,
+    "error_message": null
+  }
+]
