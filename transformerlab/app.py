@@ -2,15 +2,20 @@
 Main Streamlit application for the Transformer Intuition Lab.
 """
 
+import json
 import os
+import time
+from typing import Dict, Any
 
 import matplotlib.pyplot as plt
 import numpy as np
 import streamlit as st
+from streamlit.components.v1 import html
 
+from transformerlab.backends.factory import create_transformer, list_backends, get_backend_info
 from transformerlab.core.tokenizer import load_corpus
-from transformerlab.core.transformer import Transformer
 from transformerlab.viz.plots import plot_loss_history
+from transformerlab.benchmarks import PerformanceBenchmark
 
 
 def main():
@@ -38,6 +43,25 @@ def main():
     # Sidebar controls
     with st.sidebar:
         st.header("🎛️ Model Configuration")
+        
+        # Backend selection
+        st.subheader("🔧 Backend")
+        backend_options = list_backends()
+        backend_descriptions = {name: get_backend_info(name)['description'] for name in backend_options}
+        
+        selected_backend = st.selectbox(
+            "Select Backend",
+            backend_options,
+            help="Choose the transformer implementation backend"
+        )
+        
+        # Show backend info
+        backend_info = get_backend_info(selected_backend)
+        st.info(f"**{backend_info['description']}**\n\n{backend_info['features']}")
+        
+        if st.session_state.get('current_backend') != selected_backend:
+            st.session_state.current_backend = selected_backend
+            st.session_state.model = None  # Reset model when backend changes
 
         # Corpus selection
         st.subheader("📚 Corpus")
@@ -126,6 +150,24 @@ def main():
         if st.button("📈 Compare Experiments"):
             compare_experiments()
 
+    # Add visualization tabs
+    if st.session_state.model is not None:
+        st.subheader("📈 Interactive Visualizations")
+        
+        viz_tabs = st.tabs(["Performance", "Architecture", "Attention", "Training"])
+        
+        with viz_tabs[0]:
+            render_performance_comparison()
+            
+        with viz_tabs[1]:
+            render_architecture_visualization()
+            
+        with viz_tabs[2]:
+            render_attention_visualization()
+            
+        with viz_tabs[3]:
+            render_training_metrics()
+    
     # Main content area
     if st.session_state.model is not None:
         # Model info
@@ -235,8 +277,12 @@ def initialize_model(
         st.session_state.text = text
         st.session_state.tokenizer = tokenizer
 
-        # Create model
-        model = Transformer(
+        # Get current backend
+        backend_name = st.session_state.get('current_backend', 'numpy')
+        
+        # Create model with selected backend
+        model = create_transformer(
+            backend_name=backend_name,
             vocab_size=tokenizer.vocab_size,
             hidden_dim=hidden_dim,
             num_layers=num_layers,
@@ -288,7 +334,23 @@ def train_model(batch_size: int, seq_len: int, num_steps: int):
         batch_tokens = np.array(batch_tokens)
         batch_targets = np.array(batch_targets)
 
-        # Forward pass
+        # Use train_step instead of just forward pass for actual training  
+        from transformerlab.backends.numpy_backend.optimizer import create_numpy_optimizer
+        
+        # Initialize optimizer if not exists
+        if not hasattr(st.session_state, 'optimizer') or st.session_state.optimizer is None:
+            backend_name = st.session_state.get('current_backend', 'numpy')
+            if backend_name == 'numpy':
+                st.session_state.optimizer = create_numpy_optimizer('adam', learning_rate=0.001)
+            else:
+                # For other backends, use a simple SGD implementation
+                from transformerlab.backends.numpy_backend.optimizer import NumPySGDOptimizer
+                st.session_state.optimizer = NumPySGDOptimizer(learning_rate=0.01)
+        
+        # Training step
+        loss = model.train_step(batch_tokens, batch_targets, st.session_state.optimizer)
+        
+        # Get stats for display
         logits, stats = model.forward(batch_tokens, batch_targets)
 
         # Update progress
@@ -311,35 +373,40 @@ def generate_text(prompt: str, max_length: int = 100) -> str:
     model = st.session_state.model
     tokenizer = st.session_state.tokenizer
 
-    # Encode prompt
-    prompt_tokens = tokenizer.encode(prompt)
-    prompt_array = np.array([prompt_tokens])
+    try:
+        # Encode prompt
+        prompt_tokens = tokenizer.encode(prompt)
+        prompt_array = np.array([prompt_tokens])
 
-    # Generate
-    generated_tokens = model.generate(
-        prompt_array, max_length=max_length, temperature=0.8
-    )
-
-    # Decode
-    generated_text = tokenizer.decode(generated_tokens[0].tolist())
-
-    return generated_text
-
-
-def get_model_size(model: Transformer) -> float:
-    """Calculate model size in thousands of parameters."""
-    # This is a rough estimate
-    total_params = (
-        model.vocab_size * model.hidden_dim  # token embeddings
-        + model.hidden_dim * model.vocab_size  # output projection
-        + model.num_layers
-        * (
-            4 * model.hidden_dim * model.hidden_dim  # attention weights
-            + 2 * model.hidden_dim * model.ff_dim  # feed-forward weights
-            + 2 * model.hidden_dim  # normalization parameters
+        # Generate
+        generated_tokens = model.generate(
+            prompt_array, max_length=max_length, temperature=0.8
         )
-    )
-    return total_params / 1000
+
+        # Decode
+        generated_text = tokenizer.decode(generated_tokens[0].tolist())
+        return generated_text
+    except Exception as e:
+        return f"Generation error: {str(e)}"
+
+
+def get_model_size(model) -> float:
+    """Calculate model size in thousands of parameters."""
+    try:
+        return model.get_parameter_count() / 1000
+    except:
+        # Fallback calculation
+        total_params = (
+            model.vocab_size * model.hidden_dim  # token embeddings
+            + model.hidden_dim * model.vocab_size  # output projection
+            + model.num_layers
+            * (
+                4 * model.hidden_dim * model.hidden_dim  # attention weights
+                + 2 * model.hidden_dim * model.ff_dim  # feed-forward weights
+                + 2 * model.hidden_dim  # normalization parameters
+            )
+        )
+        return total_params / 1000
 
 
 def save_experiment():
@@ -411,6 +478,280 @@ def reset_session():
     st.session_state.text = ""
     st.session_state.experiment_history = []
     st.success("✅ Session reset!")
+
+
+def render_performance_comparison():
+    """Render interactive performance comparison charts."""
+    if not st.session_state.get('experiment_history'):
+        st.info("Train some models with different backends to see performance comparisons!")
+        return
+    
+    # Load D3.js and Plotly
+    st.markdown("""
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    """, unsafe_allow_html=True)
+    
+    # Load custom CSS
+    css_path = os.path.join(os.path.dirname(__file__), 'static', 'css', 'visualizations.css')
+    if os.path.exists(css_path):
+        with open(css_path, 'r') as f:
+            st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
+    
+    # Performance metrics comparison
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.subheader("🚀 Speed Comparison")
+        if st.button("Run Benchmark"):
+            with st.spinner("Running performance benchmark..."):
+                benchmark = PerformanceBenchmark()
+                backends = ['python', 'numpy', 'torch']
+                results = benchmark.compare_backends(backends)
+                st.session_state.benchmark_results = results
+        
+        if st.session_state.get('benchmark_results'):
+            # Create interactive chart with JavaScript
+            chart_data = json.dumps(st.session_state.benchmark_results)
+            # Get absolute path for JavaScript files
+            js_path = os.path.join(os.path.dirname(__file__), 'static', 'js', 'performance_charts.js')
+            if os.path.exists(js_path):
+                with open(js_path, 'r') as f:
+                    js_content = f.read()
+            else:
+                js_content = "console.log('JavaScript file not found');"
+                
+            html_content = f"""
+            <div id="speed-chart" style="width:100%;height:400px;"></div>
+            <script>{js_content}</script>
+            <script>
+                if (typeof PerformanceCharts !== 'undefined') {{
+                    const charts = new PerformanceCharts();
+                    charts.renderSpeedComparison('speed-chart', {chart_data});
+                }} else {{
+                    document.getElementById('speed-chart').innerHTML = '<p>Performance charts not available</p>';
+                }}
+            </script>
+            """
+            html(html_content, height=450)
+    
+    with col2:
+        st.subheader("🧠 Memory Usage")
+        if st.session_state.get('benchmark_results'):
+            memory_data = json.dumps({
+                backend: results.get('memory_usage', {})
+                for backend, results in st.session_state.benchmark_results.items()
+            })
+            html_content = f"""
+            <div id="memory-chart" style="width:100%;height:400px;"></div>
+            <script>
+                if (typeof PerformanceCharts !== 'undefined') {{
+                    const charts = new PerformanceCharts();
+                    charts.renderMemoryComparison('memory-chart', {memory_data});
+                }} else {{
+                    document.getElementById('memory-chart').innerHTML = '<p>Memory charts not available</p>';
+                }}
+            </script>
+            """
+            html(html_content, height=450)
+
+
+def render_architecture_visualization():
+    """Render interactive network architecture visualization."""
+    st.markdown("""
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    """, unsafe_allow_html=True)
+    
+    if st.session_state.model:
+        model_config = {
+            'vocab_size': st.session_state.model.vocab_size,
+            'hidden_dim': st.session_state.model.hidden_dim,
+            'num_layers': st.session_state.model.num_layers,
+            'num_heads': st.session_state.model.num_heads,
+            'ff_dim': st.session_state.model.ff_dim,
+            'max_seq_len': st.session_state.model.max_seq_len,
+            'norm_type': st.session_state.model.norm_type,
+            'activation_type': st.session_state.model.activation_type,
+            'residual_type': st.session_state.model.residual_type,
+            'pos_encoding_type': st.session_state.model.pos_encoding_type,
+        }
+        
+        config_json = json.dumps(model_config)
+        
+        # Get absolute path for JavaScript files
+        js_path = os.path.join(os.path.dirname(__file__), 'static', 'js', 'network_architecture.js')
+        if os.path.exists(js_path):
+            with open(js_path, 'r') as f:
+                js_content = f.read()
+        else:
+            js_content = "console.log('JavaScript file not found');"
+        
+        html_content = f"""
+        <div id="architecture-viz" style="width:100%;height:600px;"></div>
+        <script>{js_content}</script>
+        <script>
+            if (typeof NetworkArchitectureViz !== 'undefined') {{
+                const archViz = new NetworkArchitectureViz('architecture-viz');
+                archViz.renderArchitecture({config_json});
+            }} else {{
+                document.getElementById('architecture-viz').innerHTML = '<p>Architecture visualization not available</p>';
+            }}
+        </script>
+        """
+        html(html_content, height=650)
+    else:
+        st.info("Initialize a model to see the architecture visualization!")
+
+
+def render_attention_visualization():
+    """Render interactive attention visualization."""
+    st.markdown("""
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    """, unsafe_allow_html=True)
+    
+    if not st.session_state.model:
+        st.info("Initialize and train a model to see attention patterns!")
+        return
+    
+    # Sample text for attention visualization
+    sample_text = st.text_input("Enter text for attention analysis:", "The quick brown fox")
+    
+    if sample_text and st.button("Analyze Attention"):
+        try:
+            # Encode text
+            tokens = st.session_state.tokenizer.encode(sample_text)
+            if len(tokens) > 20:
+                tokens = tokens[:20]  # Limit for visualization
+                
+            tokens_array = np.array([tokens])
+            
+            # Get attention weights
+            logits, stats = st.session_state.model.forward(tokens_array)
+            
+            # Try to get attention weights from model
+            attention_weights = None
+            if hasattr(st.session_state.model, 'blocks') and len(st.session_state.model.blocks) > 0:
+                first_block = st.session_state.model.blocks[0]
+                if hasattr(first_block, 'attention'):
+                    attention_weights = first_block.attention.get_attention_weights()
+            
+            if attention_weights is not None:
+                # Decode tokens for display
+                token_strings = [st.session_state.tokenizer.decode([token]) for token in tokens]
+                
+                # Convert to JavaScript-compatible format
+                attention_data = {
+                    'weights': attention_weights.tolist(),
+                    'tokens': token_strings
+                }
+                
+                viz_type = st.radio("Visualization Type", ["Heatmap", "Flow Diagram"])
+                
+                data_json = json.dumps(attention_data)
+                
+                if viz_type == "Heatmap":
+                    # Get JavaScript content
+                    js_path = os.path.join(os.path.dirname(__file__), 'static', 'js', 'attention_visualization.js')
+                    if os.path.exists(js_path):
+                        with open(js_path, 'r') as f:
+                            js_content = f.read()
+                    else:
+                        js_content = "console.log('JavaScript file not found');"
+                        
+                    html_content = f"""
+                    <div id="attention-viz" style="width:100%;height:600px;"></div>
+                    <script>{js_content}</script>
+                    <script>
+                        if (typeof AttentionVisualizer !== 'undefined') {{
+                            const attentionViz = new AttentionVisualizer('attention-viz');
+                            const data = {data_json};
+                            // Simplified attention rendering
+                            attentionViz.renderHeatmap(data.weights, data.tokens);
+                        }} else {{
+                            document.getElementById('attention-viz').innerHTML = '<p>Attention visualization not available</p>';
+                        }}
+                    </script>
+                    """
+                else:
+                    html_content = f"""
+                    <div id="attention-flow" style="width:100%;height:600px;"></div>
+                    <script>{js_content}</script>
+                    <script>
+                        if (typeof AttentionVisualizer !== 'undefined') {{
+                            const attentionViz = new AttentionVisualizer('attention-flow');
+                            const data = {data_json};
+                            // Simplified flow diagram rendering
+                            attentionViz.renderFlowDiagram(data.weights, data.tokens);
+                        }} else {{
+                            document.getElementById('attention-flow').innerHTML = '<p>Attention flow visualization not available</p>';
+                        }}
+                    </script>
+                    """
+                
+                html(html_content, height=650)
+            else:
+                st.warning("Attention weights not available for this backend.")
+                
+        except Exception as e:
+            st.error(f"Error analyzing attention: {str(e)}")
+
+
+def render_training_metrics():
+    """Render real-time training metrics."""
+    if not st.session_state.model or not st.session_state.model.loss_history:
+        st.info("Train the model to see training metrics!")
+        return
+    
+    st.markdown("""
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    """, unsafe_allow_html=True)
+    
+    # Training loss over time
+    loss_data = {
+        'timestamps': list(range(len(st.session_state.model.loss_history))),
+        'loss': st.session_state.model.loss_history,
+        'learning_rate': [0.001] * len(st.session_state.model.loss_history)  # Placeholder
+    }
+    
+    data_json = json.dumps(loss_data)
+    
+    # Get JavaScript content
+    js_path = os.path.join(os.path.dirname(__file__), 'static', 'js', 'performance_charts.js')
+    if os.path.exists(js_path):
+        with open(js_path, 'r') as f:
+            js_content = f.read()
+    else:
+        js_content = "console.log('JavaScript file not found');"
+    
+    html_content = f"""
+    <div id="training-metrics" style="width:100%;height:400px;"></div>
+    <script>{js_content}</script>
+    <script>
+        if (typeof PerformanceCharts !== 'undefined') {{
+            const charts = new PerformanceCharts();
+            charts.renderRealtimeMetrics('training-metrics', {data_json});
+        }} else {{
+            document.getElementById('training-metrics').innerHTML = '<p>Training metrics visualization not available</p>';
+        }}
+    </script>
+    """
+    html(html_content, height=450)
+    
+    # Model statistics
+    if hasattr(st.session_state.model, 'get_model_stats'):
+        try:
+            stats = st.session_state.model.get_model_stats()
+            
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.metric("Current Loss", f"{st.session_state.model.loss_history[-1]:.4f}")
+            with col2:
+                st.metric("Training Steps", len(st.session_state.model.loss_history))
+            with col3:
+                st.metric("Backend", st.session_state.get('current_backend', 'unknown').title())
+                
+        except Exception as e:
+            st.warning(f"Could not load model statistics: {str(e)}")
 
 
 if __name__ == "__main__":
