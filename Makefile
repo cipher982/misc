@@ -10,8 +10,9 @@ help:
 	@echo ""
 	@echo "🚀 Quick Start:"
 	@echo "  make install     - Install dependencies"
+	@echo "  make dev-install - Install with development dependencies"
 	@echo "  make demo        - Run interactive Streamlit demo"
-	@echo "  make test        - Test all backends (numpy, python, torch)"
+	@echo "  make test        - Test all backends (requires dev-install)"
 	@echo "  make benchmark   - Run performance comparison"
 	@echo ""
 	@echo "🧪 Testing:"
@@ -22,6 +23,7 @@ help:
 	@echo "  make test-slow   - Run comprehensive slow tests"
 	@echo ""
 	@echo "🔧 Development:"
+	@echo "  make dev-install - Install with development dependencies (required for tests)"
 	@echo "  make lint        - Run code linting with ruff"
 	@echo "  make format      - Format code with black"  
 	@echo "  make check       - Run lint + format (fast, pre-commit ready)"
@@ -37,6 +39,12 @@ install:
 	@echo "📦 Installing dependencies with uv..."
 	uv sync
 	@echo "✅ Installation complete!"
+
+# Development installation with dev dependencies
+dev-install:
+	@echo "📦 Installing dependencies with dev tools..."
+	uv sync --group dev
+	@echo "✅ Development installation complete!"
 
 # Main demo application
 demo:

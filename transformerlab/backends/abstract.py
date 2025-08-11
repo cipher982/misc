@@ -28,30 +28,6 @@ class BackendConfig:
     enable_profiling: bool = False
 
 
-class AbstractTensor(ABC):
-    """Abstract tensor interface for backend-agnostic operations."""
-
-    @abstractmethod
-    def shape(self) -> tuple[int, ...]:
-        """Get tensor shape."""
-        pass
-
-    @abstractmethod
-    def to_numpy(self) -> Any:
-        """Convert to numpy array for visualization/comparison."""
-        pass
-
-    @abstractmethod
-    def __add__(self, other):
-        """Element-wise addition."""
-        pass
-
-    @abstractmethod
-    def __matmul__(self, other):
-        """Matrix multiplication."""
-        pass
-
-
 class AbstractOptimizer(ABC):
     """Abstract optimizer interface."""
 

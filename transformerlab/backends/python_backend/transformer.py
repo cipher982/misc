@@ -37,11 +37,13 @@ class PythonTransformerBlock(AbstractTransformerBlock):
         activation_type: str = "ReLU",
         residual_type: str = "Pre-LN",
         dropout: float = 0.0,
+        verbose: bool = True,
     ):
         super().__init__(hidden_dim, num_heads, ff_dim, norm_type, activation_type, residual_type, dropout)
+        self.verbose = verbose
 
         # Create components
-        self.attention = PythonAttention(hidden_dim, num_heads, dropout)
+        self.attention = PythonAttention(hidden_dim, num_heads, dropout, verbose=verbose)
         self.ff = PythonFeedForward(hidden_dim, ff_dim, activation_type, residual_type)
 
         # Create normalization modules
@@ -53,30 +55,32 @@ class PythonTransformerBlock(AbstractTransformerBlock):
 
     def forward(self, x: list[list[list[float]]], mask: Any | None = None) -> tuple[list[list[list[float]]], dict[str, Any]]:
         """Forward pass through transformer block with explicit steps."""
-        print(f"\\n[PythonTransformerBlock] Forward pass: {self.residual_type}")
-        print(f"  Input shape: {get_shape(x)}")
+        if self.verbose:
+            if self.verbose: print(f"\\n[PythonTransformerBlock] Forward pass: {self.residual_type}")
+            if self.verbose: print(f"  Input shape: {get_shape(x)}")
 
         # Self-attention with residual connection
         if self.residual_type == "Pre-LN":
-            print("  Pre-LN: Normalize before attention")
+            if self.verbose:
+                if self.verbose: print("  Pre-LN: Normalize before attention")
             # Pre-LN: normalize before attention
             x_norm = self.norm1.forward(x) if self.norm1 else x
             attn_output, attn_stats = self.attention.forward(x_norm, mask)
             x = self._add_tensors(x, attn_output)  # Residual connection
         else:
-            print("  Post-LN: Attention first, then normalize")
+            if self.verbose: print("  Post-LN: Attention first, then normalize")
             # Post-LN: attention first, then normalize
             attn_output, attn_stats = self.attention.forward(x, mask)
             x = self._add_tensors(x, attn_output)  # Residual connection
             if self.norm1:
                 x = self.norm1.forward(x)
 
-        print(f"  After attention + residual: {get_shape(x)}")
+        if self.verbose: print(f"  After attention + residual: {get_shape(x)}")
 
         # Feed-forward with residual connection
         ff_output, ff_stats = self.ff.forward(x, self.norm2)
 
-        print(f"  After feed-forward: {get_shape(ff_output)}")
+        if self.verbose: print(f"  After feed-forward: {get_shape(ff_output)}")
 
         # Cache for backward pass
         self._cache = {
@@ -112,7 +116,7 @@ class PythonTransformerBlock(AbstractTransformerBlock):
         if not self._cache:
             raise RuntimeError("Forward pass must be called before backward pass")
 
-        print("[PythonTransformerBlock] Backward pass (simplified)...")
+        if self.verbose: print("[PythonTransformerBlock] Backward pass (simplified)...")
 
         # Simplified gradients
         input_shape = get_shape(self._cache['input'])
@@ -160,17 +164,20 @@ class PythonTransformer(AbstractTransformer):
         pos_encoding_type: str = "Sinusoidal",
         dropout: float = 0.0,
         backend_config: BackendConfig | None = None,
+        verbose: bool = True,
     ):
         super().__init__(
             vocab_size, hidden_dim, num_layers, num_heads, ff_dim,
             max_seq_len, norm_type, activation_type, residual_type,
             pos_encoding_type, dropout, backend_config
         )
+        self.verbose = verbose
 
-        print("\\n[PythonTransformer] Initializing with:")
-        print(f"  vocab_size={vocab_size}, hidden_dim={hidden_dim}")
-        print(f"  num_layers={num_layers}, num_heads={num_heads}")
-        print("  Backend: Pure Python (maximum transparency)")
+        if self.verbose:
+            if self.verbose: print("\\n[PythonTransformer] Initializing with:")
+            if self.verbose: print(f"  vocab_size={vocab_size}, hidden_dim={hidden_dim}")
+            if self.verbose: print(f"  num_layers={num_layers}, num_heads={num_heads}")
+            if self.verbose: print("  Backend: Pure Python (maximum transparency)")
 
         # Token embeddings (vocab_size, hidden_dim)
         self.token_embedding = randn((vocab_size, hidden_dim))
@@ -181,10 +188,10 @@ class PythonTransformer(AbstractTransformer):
         # Transformer blocks
         self.blocks = []
         for i in range(num_layers):
-            print(f"  Creating transformer block {i+1}/{num_layers}")
+            if self.verbose: print(f"  Creating transformer block {i+1}/{num_layers}")
             block = PythonTransformerBlock(
                 hidden_dim, num_heads, ff_dim, norm_type,
-                activation_type, residual_type, dropout
+                activation_type, residual_type, dropout, verbose=self.verbose
             )
             self.blocks.append(block)
 
@@ -198,17 +205,17 @@ class PythonTransformer(AbstractTransformer):
         # Cache for backward pass
         self._forward_cache = {}
 
-        print(f"  Total parameters: {self.get_parameter_count()}")
+        if self.verbose: print(f"  Total parameters: {self.get_parameter_count()}")
 
     def forward(self, x: list[list[int]], targets: list[list[int]] | None = None) -> tuple[list[list[list[float]]], dict[str, Any]]:
         """Forward pass through complete transformer."""
         batch_size, seq_len = len(x), len(x[0])
 
-        print("\\n[PythonTransformer] Forward pass:")
-        print(f"  Input shape: batch_size={batch_size}, seq_len={seq_len}")
+        if self.verbose: print("\\n[PythonTransformer] Forward pass:")
+        if self.verbose: print(f"  Input shape: batch_size={batch_size}, seq_len={seq_len}")
 
         # Step 1: Token embeddings
-        print("  Step 1: Token embedding lookup...")
+        if self.verbose: print("  Step 1: Token embedding lookup...")
         embeddings = zeros((batch_size, seq_len, self.hidden_dim))
         for batch in range(batch_size):
             for seq in range(seq_len):
@@ -217,7 +224,7 @@ class PythonTransformer(AbstractTransformer):
                     embeddings[batch][seq][dim] = self.token_embedding[token_id][dim]
 
         # Step 2: Add positional encoding
-        print("  Step 2: Adding positional encoding...")
+        if self.verbose: print("  Step 2: Adding positional encoding...")
         for batch in range(batch_size):
             for seq in range(seq_len):
                 for dim in range(self.hidden_dim):
@@ -228,29 +235,29 @@ class PythonTransformer(AbstractTransformer):
         layer_stats = []
 
         for i, block in enumerate(self.blocks):
-            print(f"  Step 3.{i+1}: Transformer block {i+1}/{len(self.blocks)}")
+            if self.verbose: print(f"  Step 3.{i+1}: Transformer block {i+1}/{len(self.blocks)}")
             h, block_stats = block.forward(h, mask=None)  # No mask for simplicity
             layer_stats.append(block_stats)
 
         # Step 4: Final normalization
         if self.final_norm:
-            print("  Step 4: Final layer normalization...")
+            if self.verbose: print("  Step 4: Final layer normalization...")
             h = self.final_norm.forward(h)
 
         # Step 5: Output projection
-        print("  Step 5: Output projection to vocabulary...")
+        if self.verbose: print("  Step 5: Output projection to vocabulary...")
         logits = add_3d(matmul_3d(h, self.output_projection), self.output_bias)
 
-        print(f"  Final logits shape: {get_shape(logits)}")
+        if self.verbose: print(f"  Final logits shape: {get_shape(logits)}")
 
         # Calculate loss if targets provided
         loss = None
         if targets is not None:
-            print("  Computing cross-entropy loss...")
+            if self.verbose: print("  Computing cross-entropy loss...")
             loss = self._compute_loss(logits, targets)
             self.loss_history.append(loss)
             self.step_count += 1
-            print(f"  Loss: {loss:.6f}")
+            if self.verbose: print(f"  Loss: {loss:.6f}")
 
         # Cache for backward pass
         self._forward_cache = {
@@ -285,7 +292,7 @@ class PythonTransformer(AbstractTransformer):
         """Compute cross-entropy loss with explicit steps."""
         batch_size, seq_len, vocab_size = get_shape(logits)
 
-        print(f"    Computing loss for {batch_size} batches, {seq_len} tokens each")
+        if self.verbose: print(f"    Computing loss for {batch_size} batches, {seq_len} tokens each")
 
         total_loss = 0.0
         num_tokens = 0
@@ -313,7 +320,7 @@ class PythonTransformer(AbstractTransformer):
 
     def backward(self, logits: list[list[list[float]]], targets: list[list[int]]) -> tuple[float, dict[str, Any]]:
         """Backward pass (simplified for educational purposes)."""
-        print("\\n[PythonTransformer] Backward pass (simplified)...")
+        if self.verbose: print("\\n[PythonTransformer] Backward pass (simplified)...")
 
         # Compute loss
         loss = self._compute_loss(logits, targets)
@@ -336,7 +343,7 @@ class PythonTransformer(AbstractTransformer):
 
     def train_step(self, x: list[list[int]], targets: list[list[int]], optimizer) -> float:
         """Single training step with detailed logging."""
-        print(f"\\n[PythonTransformer] Training step {self.step_count + 1}")
+        if self.verbose: print(f"\\n[PythonTransformer] Training step {self.step_count + 1}")
 
         # Forward pass
         logits, stats = self.forward(x, targets)
@@ -345,14 +352,14 @@ class PythonTransformer(AbstractTransformer):
         loss, gradients = self.backward(logits, targets)
 
         # Parameter update (simplified)
-        print("  Updating parameters...")
+        if self.verbose: print("  Updating parameters...")
         parameters = self.get_parameters()
         grad_list = [gradients.get(name, self._zero_like_param(param))
                      for name, param in zip(self.get_parameter_names(), parameters, strict=False)]
 
         optimizer.update_parameters(parameters, grad_list)
 
-        print(f"  Training step complete. Loss: {loss:.6f}")
+        if self.verbose: print(f"  Training step complete. Loss: {loss:.6f}")
         return loss
 
     def _zero_like_param(self, param: Any) -> Any:
@@ -361,13 +368,13 @@ class PythonTransformer(AbstractTransformer):
 
     def generate(self, prompt: list[list[int]], max_length: int = 50, temperature: float = 1.0) -> list[list[int]]:
         """Generate text with detailed steps."""
-        print(f"\\n[PythonTransformer] Generating {max_length} tokens at temperature={temperature}")
+        if self.verbose: print(f"\\n[PythonTransformer] Generating {max_length} tokens at temperature={temperature}")
 
         batch_size = len(prompt)
         generated = copy_tensor(prompt)
 
         for step in range(max_length):
-            print(f"  Generation step {step + 1}/{max_length}")
+            if self.verbose: print(f"  Generation step {step + 1}/{max_length}")
 
             # Forward pass
             logits, _ = self.forward(generated)
@@ -402,7 +409,7 @@ class PythonTransformer(AbstractTransformer):
             for batch in range(batch_size):
                 generated[batch].append(next_tokens[batch])
 
-        print(f"  Generation complete. Final length: {len(generated[0])}")
+        if self.verbose: print(f"  Generation complete. Final length: {len(generated[0])}")
         return generated
 
     def get_parameters(self) -> list[Any]:

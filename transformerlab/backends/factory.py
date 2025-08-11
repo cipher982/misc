@@ -75,6 +75,7 @@ def create_transformer(
     dropout: float = 0.0,
     device: str = "cpu",
     dtype: str = "float32",
+    verbose: bool = True,
     **kwargs
 ) -> AbstractTransformer:
     """Create a transformer model with the specified backend.
