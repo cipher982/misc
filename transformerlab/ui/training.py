@@ -96,10 +96,8 @@ def train_model(config: dict[str, Any]):
         if (not hasattr(st.session_state, 'optimizer') or 
             st.session_state.optimizer is None or
             st.session_state.get('optimizer_backend') != backend_name):
-            st.success(f"Creating {backend_name} optimizer for model...")
             st.session_state.optimizer = create_backend_optimizer(backend_name, model)
             st.session_state.optimizer_backend = backend_name
-            st.success(f"Created optimizer: {type(st.session_state.optimizer).__name__}")
         
         # Training step
         loss = model.train_step(batch_tokens, batch_targets, st.session_state.optimizer)
@@ -121,10 +119,6 @@ def train_model(config: dict[str, Any]):
 
 def create_backend_optimizer(backend_name: str, model, optimizer_type: str = "adam", learning_rate: float = 0.001):
     """Create optimizer appropriate for the backend."""
-    import streamlit as st
-    
-    st.info(f"Creating optimizer for backend: {backend_name}, model type: {type(model).__name__}")
-    
     if backend_name == "numpy":
         from transformerlab.backends.numpy_backend.optimizer import create_numpy_optimizer
         return create_numpy_optimizer(optimizer_type, learning_rate=learning_rate)
@@ -140,17 +134,14 @@ def create_backend_optimizer(backend_name: str, model, optimizer_type: str = "ad
         from transformerlab.backends.torch_backend.optimizer import create_torch_optimizer
         # Get PyTorch parameters from the model
         if hasattr(model, 'parameters'):
-            st.info(f"Model has parameters() method, creating PyTorch optimizer")
             return create_torch_optimizer(optimizer_type, model.parameters(), learning_rate=learning_rate)
         else:
             # Fallback to numpy optimizer if torch parameters not available
-            st.warning(f"Model doesn't have parameters() method, falling back to numpy optimizer")
             from transformerlab.backends.numpy_backend.optimizer import create_numpy_optimizer
             return create_numpy_optimizer(optimizer_type, learning_rate=learning_rate)
     
     else:
         # Default fallback
-        st.warning(f"Unknown backend {backend_name}, using numpy optimizer")
         from transformerlab.backends.numpy_backend.optimizer import create_numpy_optimizer
         return create_numpy_optimizer(optimizer_type, learning_rate=learning_rate)
 

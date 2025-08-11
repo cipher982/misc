@@ -30,6 +30,7 @@ def render_config_sidebar():
         if st.session_state.get('current_backend') != selected_backend:
             st.session_state.current_backend = selected_backend
             st.session_state.model = None  # Reset model when backend changes
+            st.session_state.optimizer = None  # Reset optimizer when backend changes
 
         # Corpus selection
         st.subheader("📚 Corpus")
