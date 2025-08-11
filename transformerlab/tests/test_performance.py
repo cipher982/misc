@@ -4,9 +4,11 @@ Performance and benchmarking tests.
 
 import pytest
 import time
-import psutil
 import numpy as np
 from typing import Dict, List, Tuple
+
+# Import psutil conditionally for performance tests
+psutil = pytest.importorskip("psutil", reason="psutil required for performance tests")
 
 from transformerlab.backends.factory import create_transformer, list_backends
 from transformerlab.benchmarks import PerformanceBenchmark

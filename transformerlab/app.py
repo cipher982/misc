@@ -281,6 +281,9 @@ def initialize_model(
         backend_name = st.session_state.get('current_backend', 'numpy')
         
         # Create model with selected backend
+        # Use verbose=False for python backend in web interface to keep console clean
+        verbose = backend_name != "python"
+        
         model = create_transformer(
             backend_name=backend_name,
             vocab_size=tokenizer.vocab_size,
@@ -292,6 +295,7 @@ def initialize_model(
             activation_type=activation_type,
             residual_type=residual_type,
             pos_encoding_type=pos_encoding_type,
+            verbose=verbose,
         )
 
         st.session_state.model = model
@@ -334,18 +338,10 @@ def train_model(batch_size: int, seq_len: int, num_steps: int):
         batch_tokens = np.array(batch_tokens)
         batch_targets = np.array(batch_targets)
 
-        # Use train_step instead of just forward pass for actual training  
-        from transformerlab.backends.numpy_backend.optimizer import create_numpy_optimizer
-        
         # Initialize optimizer if not exists
         if not hasattr(st.session_state, 'optimizer') or st.session_state.optimizer is None:
             backend_name = st.session_state.get('current_backend', 'numpy')
-            if backend_name == 'numpy':
-                st.session_state.optimizer = create_numpy_optimizer('adam', learning_rate=0.001)
-            else:
-                # For other backends, use a simple SGD implementation
-                from transformerlab.backends.numpy_backend.optimizer import NumPySGDOptimizer
-                st.session_state.optimizer = NumPySGDOptimizer(learning_rate=0.01)
+            st.session_state.optimizer = create_backend_optimizer(backend_name, model)
         
         # Training step
         loss = model.train_step(batch_tokens, batch_targets, st.session_state.optimizer)
@@ -388,6 +384,35 @@ def generate_text(prompt: str, max_length: int = 100) -> str:
         return generated_text
     except Exception as e:
         return f"Generation error: {str(e)}"
+
+
+def create_backend_optimizer(backend_name: str, model, optimizer_type: str = "adam", learning_rate: float = 0.001):
+    """Create optimizer appropriate for the backend."""
+    if backend_name == "numpy":
+        from transformerlab.backends.numpy_backend.optimizer import create_numpy_optimizer
+        return create_numpy_optimizer(optimizer_type, learning_rate=learning_rate)
+    
+    elif backend_name == "python":
+        from transformerlab.backends.python_backend.optimizer import PythonAdamOptimizer, PythonSGDOptimizer
+        if optimizer_type.lower() == "adam":
+            return PythonAdamOptimizer(learning_rate=learning_rate)
+        else:
+            return PythonSGDOptimizer(learning_rate=learning_rate)
+    
+    elif backend_name == "torch":
+        from transformerlab.backends.torch_backend.optimizer import create_torch_optimizer
+        # Get PyTorch parameters from the model
+        if hasattr(model, 'parameters'):
+            return create_torch_optimizer(optimizer_type, model.parameters(), learning_rate=learning_rate)
+        else:
+            # Fallback to numpy optimizer if torch parameters not available
+            from transformerlab.backends.numpy_backend.optimizer import create_numpy_optimizer
+            return create_numpy_optimizer(optimizer_type, learning_rate=learning_rate)
+    
+    else:
+        # Default fallback
+        from transformerlab.backends.numpy_backend.optimizer import create_numpy_optimizer
+        return create_numpy_optimizer(optimizer_type, learning_rate=learning_rate)
 
 
 def get_model_size(model) -> float:
@@ -507,12 +532,44 @@ def render_performance_comparison():
             with st.spinner("Running performance benchmark..."):
                 benchmark = PerformanceBenchmark()
                 backends = ['python', 'numpy', 'torch']
-                results = benchmark.compare_backends(backends)
-                st.session_state.benchmark_results = results
+                
+                # Define benchmark configurations
+                size_configs = [
+                    {"vocab_size": 20, "hidden_dim": 32, "num_layers": 1, "num_heads": 2, "ff_dim": 64},
+                    {"vocab_size": 30, "hidden_dim": 48, "num_layers": 2, "num_heads": 4, "ff_dim": 96}
+                ]
+                
+                # Run benchmarks first
+                benchmark_results = benchmark.benchmark_model_sizes(size_configs, backends, num_runs=1)
+                
+                # Then generate comparison analysis
+                comparison = benchmark.compare_backends(benchmark_results)
+                
+                # Store both raw results and comparison
+                st.session_state.benchmark_results = {
+                    'raw_results': benchmark_results,
+                    'comparison': comparison
+                }
+                st.session_state.raw_benchmark_data = benchmark_results
         
         if st.session_state.get('benchmark_results'):
-            # Create interactive chart with JavaScript
-            chart_data = json.dumps(st.session_state.benchmark_results)
+            # Create interactive chart with JavaScript from raw benchmark data
+            raw_results = st.session_state.benchmark_results.get('raw_results', [])
+            
+            # Convert benchmark results to chart-ready format
+            chart_data = {}
+            for result in raw_results:
+                if result.backend not in chart_data:
+                    chart_data[result.backend] = {
+                        'forward_times': [],
+                        'memory_usage': [],
+                        'parameter_counts': []
+                    }
+                chart_data[result.backend]['forward_times'].append(result.forward_time_ms)
+                chart_data[result.backend]['memory_usage'].append(result.memory_usage_mb)
+                chart_data[result.backend]['parameter_counts'].append(result.parameter_count)
+            
+            chart_data_json = json.dumps(chart_data)
             # Get absolute path for JavaScript files
             js_path = os.path.join(os.path.dirname(__file__), 'static', 'js', 'performance_charts.js')
             if os.path.exists(js_path):
@@ -527,7 +584,7 @@ def render_performance_comparison():
             <script>
                 if (typeof PerformanceCharts !== 'undefined') {{
                     const charts = new PerformanceCharts();
-                    charts.renderSpeedComparison('speed-chart', {chart_data});
+                    charts.renderSpeedComparison('speed-chart', {chart_data_json});
                 }} else {{
                     document.getElementById('speed-chart').innerHTML = '<p>Performance charts not available</p>';
                 }}
@@ -538,16 +595,23 @@ def render_performance_comparison():
     with col2:
         st.subheader("🧠 Memory Usage")
         if st.session_state.get('benchmark_results'):
-            memory_data = json.dumps({
-                backend: results.get('memory_usage', {})
-                for backend, results in st.session_state.benchmark_results.items()
-            })
+            # Convert to memory data format for charts
+            raw_results = st.session_state.benchmark_results.get('raw_results', [])
+            memory_data = {}
+            for result in raw_results:
+                if result.backend not in memory_data:
+                    memory_data[result.backend] = {
+                        'parameters_mb': result.memory_usage_mb * 0.3,  # Estimate
+                        'activations_mb': result.memory_usage_mb * 0.7,  # Estimate  
+                        'gradients_mb': 0  # Not available from current benchmark
+                    }
+            memory_data_json = json.dumps(memory_data)
             html_content = f"""
             <div id="memory-chart" style="width:100%;height:400px;"></div>
             <script>
                 if (typeof PerformanceCharts !== 'undefined') {{
                     const charts = new PerformanceCharts();
-                    charts.renderMemoryComparison('memory-chart', {memory_data});
+                    charts.renderMemoryComparison('memory-chart', {memory_data_json});
                 }} else {{
                     document.getElementById('memory-chart').innerHTML = '<p>Memory charts not available</p>';
                 }}
