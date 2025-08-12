@@ -148,6 +148,10 @@ class TorchTransformer(AbstractTransformer, nn.Module):
         )
         nn.Module.__init__(self)
 
+        # Validate configuration before creating tensors
+        if hidden_dim % num_heads != 0:
+            raise ValueError(f"hidden_dim ({hidden_dim}) must be divisible by num_heads ({num_heads})")
+
         # Determine device
         self.device = torch.device(
             backend_config.device if backend_config and backend_config.device != "cpu"
