@@ -370,6 +370,10 @@ class PythonTransformer(AbstractTransformer):
         """Generate text with detailed steps."""
         if self.verbose: print(f"\\n[PythonTransformer] Generating {max_length} tokens at temperature={temperature}")
 
+        # Convert numpy array to list if needed
+        if hasattr(prompt, 'tolist'):
+            prompt = prompt.tolist()
+        
         batch_size = len(prompt)
         generated = copy_tensor(prompt)
 
