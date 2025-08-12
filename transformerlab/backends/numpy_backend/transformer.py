@@ -383,6 +383,13 @@ class NumPyTransformer(AbstractTransformer):
                 grad_list.append(np.zeros_like(parameters[param_idx]))
                 param_idx += 1
         
+        # Final normalization parameters (if they exist)
+        if self.final_norm and hasattr(self.final_norm, 'get_parameters'):
+            final_norm_params = self.final_norm.get_parameters()
+            for _ in final_norm_params:
+                grad_list.append(np.zeros_like(parameters[param_idx]))
+                param_idx += 1
+        
         # Output projection - these have actual gradients
         if 'output_projection' in gradients:
             grad_list.append(gradients['output_projection'])
@@ -462,6 +469,10 @@ class NumPyTransformer(AbstractTransformer):
         # Add transformer block parameters
         for block in self.blocks:
             parameters.extend(block.get_parameters())
+
+        # Add final normalization parameters
+        if self.final_norm and hasattr(self.final_norm, 'get_parameters'):
+            parameters.extend(self.final_norm.get_parameters())
 
         # Add output projection parameters
         parameters.append(self.output_projection)
