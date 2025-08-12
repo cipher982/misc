@@ -152,7 +152,11 @@ def create_transformer(
             **kwargs
         )
         return transformer
+    except (ValueError, AssertionError, TypeError) as e:
+        # Preserve validation errors - don't wrap them
+        raise e
     except Exception as e:
+        # Only wrap unexpected errors (import issues, etc.)
         raise RuntimeError(f"Failed to create {backend_name} transformer: {e}")
 
 
