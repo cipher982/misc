@@ -36,7 +36,8 @@ class PerformanceBenchmark:
     """Comprehensive performance benchmarking suite."""
     
     def __init__(self):
-        self.results: list[BenchmarkResult] = []
+        self.results: dict[str, Any] = {}  # Changed to dict for test compatibility
+        self._raw_results: list[BenchmarkResult] = []  # Keep raw results internally
         self.backends = list_backends()
     
     def benchmark_model_sizes(
@@ -85,7 +86,7 @@ class PerformanceBenchmark:
                     all_results.append(failed_result)
                     print(f"    ❌ All runs failed")
         
-        self.results.extend(all_results)
+        self._raw_results.extend(all_results)
         return all_results
     
     def _benchmark_single_run(
