@@ -28,7 +28,7 @@ help:
 	@echo "🔧 Development:"
 	@echo "  make dev-install - Install with development dependencies (required for tests)"
 	@echo "  make lint        - Run code linting with ruff"
-	@echo "  make format      - Format code with black"  
+	@echo "  make format      - Format code with ruff"  
 	@echo "  make check       - Run lint + format (fast, pre-commit ready)"
 	@echo "  make setup-precommit - Install pre-commit hooks"
 	@echo "  make clean       - Clean generated files"
@@ -105,19 +105,11 @@ training:
 # Development tools
 lint:
 	@echo "🔍 Running code linting..."
-	@if command -v ruff >/dev/null 2>&1; then \
-		ruff check transformerlab/ --fix; \
-	else \
-		echo "⚠️  ruff not installed, skipping linting"; \
-	fi
+	uv run ruff check transformerlab/ --fix
 
 format:
-	@echo "✨ Formatting code with black..."
-	@if command -v black >/dev/null 2>&1; then \
-		black transformerlab/ *.py; \
-	else \
-		echo "⚠️  black not installed, skipping formatting"; \
-	fi
+	@echo "✨ Formatting code with ruff..."
+	uv run ruff format transformerlab/
 
 # Combined quality checks (fast - suitable for pre-commit)
 check: lint format
