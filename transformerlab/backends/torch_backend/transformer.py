@@ -10,8 +10,8 @@ from typing import Any
 
 import numpy as np
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
+from torch import nn
 
 from ..abstract import AbstractTransformer, AbstractTransformerBlock, BackendConfig
 from .attention import TorchAttention
@@ -34,14 +34,22 @@ class TorchTransformerBlock(AbstractTransformerBlock, nn.Module):
     ):
         # Initialize both parent classes
         AbstractTransformerBlock.__init__(
-            self, hidden_dim, num_heads, ff_dim, norm_type,
-            activation_type, residual_type, dropout
+            self,
+            hidden_dim,
+            num_heads,
+            ff_dim,
+            norm_type,
+            activation_type,
+            residual_type,
+            dropout,
         )
         nn.Module.__init__(self)
 
         # Create components
         self.attention = TorchAttention(hidden_dim, num_heads, dropout)
-        self.feed_forward = TorchFeedForward(hidden_dim, ff_dim, activation_type, residual_type)
+        self.feed_forward = TorchFeedForward(
+            hidden_dim, ff_dim, activation_type, residual_type
+        )
 
         # Create normalization layers
         self.norm1 = create_torch_normalization(norm_type, hidden_dim)
@@ -50,7 +58,9 @@ class TorchTransformerBlock(AbstractTransformerBlock, nn.Module):
         # Dropout
         self.dropout = nn.Dropout(dropout) if dropout > 0 else None
 
-    def forward(self, x: torch.Tensor, mask: torch.Tensor | None = None) -> tuple[torch.Tensor, dict[str, Any]]:
+    def forward(
+        self, x: torch.Tensor, mask: torch.Tensor | None = None
+    ) -> tuple[torch.Tensor, dict[str, Any]]:
         """Forward pass through transformer block."""
         # Self-attention with residual connection
         if self.residual_type == "Pre-LN":
@@ -93,7 +103,9 @@ class TorchTransformerBlock(AbstractTransformerBlock, nn.Module):
 
         return x, block_stats
 
-    def backward(self, grad_output: torch.Tensor) -> tuple[torch.Tensor, dict[str, Any]]:
+    def backward(
+        self, grad_output: torch.Tensor
+    ) -> tuple[torch.Tensor, dict[str, Any]]:
         """Backward pass (handled automatically by PyTorch)."""
         # This is handled automatically by PyTorch's autograd
         # We maintain the interface for compatibility
@@ -142,20 +154,35 @@ class TorchTransformer(AbstractTransformer, nn.Module):
     ):
         # Initialize both parent classes
         AbstractTransformer.__init__(
-            self, vocab_size, hidden_dim, num_layers, num_heads, ff_dim,
-            max_seq_len, norm_type, activation_type, residual_type,
-            pos_encoding_type, dropout, backend_config
+            self,
+            vocab_size,
+            hidden_dim,
+            num_layers,
+            num_heads,
+            ff_dim,
+            max_seq_len,
+            norm_type,
+            activation_type,
+            residual_type,
+            pos_encoding_type,
+            dropout,
+            backend_config,
         )
         nn.Module.__init__(self)
 
         # Validate configuration before creating tensors
         if hidden_dim % num_heads != 0:
-            raise ValueError(f"hidden_dim ({hidden_dim}) must be divisible by num_heads ({num_heads})")
+            raise ValueError(
+                f"hidden_dim ({hidden_dim}) must be divisible by num_heads ({num_heads})"
+            )
 
         # Determine device
         self.device = torch.device(
-            backend_config.device if backend_config and backend_config.device != "cpu"
-            and torch.cuda.is_available() else "cpu"
+            backend_config.device
+            if backend_config
+            and backend_config.device != "cpu"
+            and torch.cuda.is_available()
+            else "cpu"
         )
 
         # Token embeddings
@@ -163,19 +190,28 @@ class TorchTransformer(AbstractTransformer, nn.Module):
 
         # Positional encoding
         if pos_encoding_type == "Sinusoidal":
-            self.pos_encoding = self._create_sinusoidal_encoding(max_seq_len, hidden_dim)
-            self.register_buffer('positional_encoding', self.pos_encoding)
+            self.pos_encoding = self._create_sinusoidal_encoding(
+                max_seq_len, hidden_dim
+            )
+            self.register_buffer("positional_encoding", self.pos_encoding)
         elif pos_encoding_type == "Learnable":
             self.pos_encoding = nn.Embedding(max_seq_len, hidden_dim)
 
         # Transformer blocks
-        self.blocks = nn.ModuleList([
-            TorchTransformerBlock(
-                hidden_dim, num_heads, ff_dim, norm_type,
-                activation_type, residual_type, dropout
-            )
-            for _ in range(num_layers)
-        ])
+        self.blocks = nn.ModuleList(
+            [
+                TorchTransformerBlock(
+                    hidden_dim,
+                    num_heads,
+                    ff_dim,
+                    norm_type,
+                    activation_type,
+                    residual_type,
+                    dropout,
+                )
+                for _ in range(num_layers)
+            ]
+        )
 
         # Final normalization
         if residual_type == "Pre-LN":
@@ -192,13 +228,16 @@ class TorchTransformer(AbstractTransformer, nn.Module):
         # Move to device
         self.to(self.device)
 
-    def _create_sinusoidal_encoding(self, max_len: int, hidden_dim: int) -> torch.Tensor:
+    def _create_sinusoidal_encoding(
+        self, max_len: int, hidden_dim: int
+    ) -> torch.Tensor:
         """Create sinusoidal positional encoding."""
         pe = torch.zeros(max_len, hidden_dim)
         position = torch.arange(0, max_len).unsqueeze(1).float()
 
-        div_term = torch.exp(torch.arange(0, hidden_dim, 2).float() *
-                            -(math.log(10000.0) / hidden_dim))
+        div_term = torch.exp(
+            torch.arange(0, hidden_dim, 2).float() * -(math.log(10000.0) / hidden_dim)
+        )
 
         pe[:, 0::2] = torch.sin(position * div_term)
         pe[:, 1::2] = torch.cos(position * div_term)
@@ -210,7 +249,9 @@ class TorchTransformer(AbstractTransformer, nn.Module):
         # Initialize embeddings
         nn.init.normal_(self.token_embedding.weight, mean=0, std=0.02)
 
-        if hasattr(self, 'pos_encoding') and isinstance(self.pos_encoding, nn.Embedding):
+        if hasattr(self, "pos_encoding") and isinstance(
+            self.pos_encoding, nn.Embedding
+        ):
             nn.init.normal_(self.pos_encoding.weight, mean=0, std=0.02)
 
         # Initialize output projection
@@ -219,7 +260,9 @@ class TorchTransformer(AbstractTransformer, nn.Module):
 
         # Initialize transformer blocks (done in their own __init__)
 
-    def forward(self, x: torch.Tensor, targets: torch.Tensor | None = None) -> tuple[torch.Tensor, dict[str, Any]]:
+    def forward(
+        self, x: torch.Tensor, targets: torch.Tensor | None = None
+    ) -> tuple[torch.Tensor, dict[str, Any]]:
         """Forward pass through complete transformer."""
         # Convert various input types to PyTorch tensors
         if isinstance(x, (list, tuple, np.ndarray)):
@@ -234,10 +277,16 @@ class TorchTransformer(AbstractTransformer, nn.Module):
 
         # Add positional encoding
         if self.pos_encoding_type == "Sinusoidal":
-            pos_enc = self.positional_encoding[:seq_len].unsqueeze(0)  # (1, seq, hidden)
+            pos_enc = self.positional_encoding[:seq_len].unsqueeze(
+                0
+            )  # (1, seq, hidden)
             embeddings = embeddings + pos_enc
-        elif hasattr(self.pos_encoding, 'weight'):
-            positions = torch.arange(seq_len, device=self.device).unsqueeze(0).expand(batch_size, -1)
+        elif hasattr(self.pos_encoding, "weight"):
+            positions = (
+                torch.arange(seq_len, device=self.device)
+                .unsqueeze(0)
+                .expand(batch_size, -1)
+            )
             pos_embeddings = self.pos_encoding(positions)
             embeddings = embeddings + pos_embeddings
 
@@ -246,7 +295,9 @@ class TorchTransformer(AbstractTransformer, nn.Module):
         layer_stats = []
 
         for i, block in enumerate(self.blocks):
-            h, block_stats = block.forward(h, mask=None)  # No causal mask for simplicity
+            h, block_stats = block.forward(
+                h, mask=None
+            )  # No causal mask for simplicity
             layer_stats.append(block_stats)
 
         # Final normalization
@@ -262,7 +313,7 @@ class TorchTransformer(AbstractTransformer, nn.Module):
             loss = F.cross_entropy(
                 logits.view(-1, logits.size(-1)),
                 targets.view(-1),
-                ignore_index=0  # Ignore padding tokens
+                ignore_index=0,  # Ignore padding tokens
             )
             self.loss_history.append(loss.item())
             self.step_count += 1
@@ -291,13 +342,13 @@ class TorchTransformer(AbstractTransformer, nn.Module):
 
         return logits, model_stats
 
-    def backward(self, logits: torch.Tensor, targets: torch.Tensor) -> tuple[float, dict[str, Any]]:
+    def backward(
+        self, logits: torch.Tensor, targets: torch.Tensor
+    ) -> tuple[float, dict[str, Any]]:
         """Backward pass (handled automatically by PyTorch)."""
         # Calculate loss
         loss = F.cross_entropy(
-            logits.view(-1, logits.size(-1)),
-            targets.view(-1),
-            ignore_index=0
+            logits.view(-1, logits.size(-1)), targets.view(-1), ignore_index=0
         )
 
         # Backward pass is handled automatically by PyTorch
@@ -329,9 +380,7 @@ class TorchTransformer(AbstractTransformer, nn.Module):
 
         # Calculate loss
         loss = F.cross_entropy(
-            logits.view(-1, logits.size(-1)),
-            targets.view(-1),
-            ignore_index=0
+            logits.view(-1, logits.size(-1)), targets.view(-1), ignore_index=0
         )
 
         # Backward pass
@@ -351,7 +400,7 @@ class TorchTransformer(AbstractTransformer, nn.Module):
         max_length: int = 50,
         temperature: float = 1.0,
         top_k: int | None = None,
-        top_p: float | None = None
+        top_p: float | None = None,
     ) -> torch.Tensor:
         """Generate text with advanced sampling strategies."""
         if isinstance(prompt, (list, tuple, np.ndarray)):
@@ -372,21 +421,33 @@ class TorchTransformer(AbstractTransformer, nn.Module):
 
                 # Apply top-k filtering
                 if top_k is not None:
-                    top_k_logits, _ = torch.topk(next_token_logits, min(top_k, next_token_logits.size(-1)))
-                    next_token_logits[next_token_logits < top_k_logits[:, -1:]] = float('-inf')
+                    top_k_logits, _ = torch.topk(
+                        next_token_logits, min(top_k, next_token_logits.size(-1))
+                    )
+                    next_token_logits[next_token_logits < top_k_logits[:, -1:]] = float(
+                        "-inf"
+                    )
 
                 # Apply top-p (nucleus) filtering
                 if top_p is not None:
-                    sorted_logits, sorted_indices = torch.sort(next_token_logits, descending=True)
-                    cumulative_probs = torch.cumsum(F.softmax(sorted_logits, dim=-1), dim=-1)
+                    sorted_logits, sorted_indices = torch.sort(
+                        next_token_logits, descending=True
+                    )
+                    cumulative_probs = torch.cumsum(
+                        F.softmax(sorted_logits, dim=-1), dim=-1
+                    )
 
                     # Remove tokens with cumulative probability above the threshold
                     sorted_indices_to_remove = cumulative_probs > top_p
-                    sorted_indices_to_remove[:, 1:] = sorted_indices_to_remove[:, :-1].clone()
+                    sorted_indices_to_remove[:, 1:] = sorted_indices_to_remove[
+                        :, :-1
+                    ].clone()
                     sorted_indices_to_remove[:, 0] = 0
 
-                    indices_to_remove = sorted_indices_to_remove.scatter(1, sorted_indices, sorted_indices_to_remove)
-                    next_token_logits[indices_to_remove] = float('-inf')
+                    indices_to_remove = sorted_indices_to_remove.scatter(
+                        1, sorted_indices, sorted_indices_to_remove
+                    )
+                    next_token_logits[indices_to_remove] = float("-inf")
 
                 # Sample next token
                 probs = F.softmax(next_token_logits, dim=-1)
@@ -411,27 +472,30 @@ class TorchTransformer(AbstractTransformer, nn.Module):
 
     def save(self, path: str) -> None:
         """Save model parameters."""
-        torch.save({
-            'model_state_dict': self.state_dict(),
-            'config': {
-                'vocab_size': self.vocab_size,
-                'hidden_dim': self.hidden_dim,
-                'num_layers': self.num_layers,
-                'num_heads': self.num_heads,
-                'ff_dim': self.ff_dim,
-                'max_seq_len': self.max_seq_len,
-                'norm_type': self.norm_type,
-                'activation_type': self.activation_type,
-                'residual_type': self.residual_type,
-                'pos_encoding_type': self.pos_encoding_type,
-                'dropout': self.dropout,
-            }
-        }, path)
+        torch.save(
+            {
+                "model_state_dict": self.state_dict(),
+                "config": {
+                    "vocab_size": self.vocab_size,
+                    "hidden_dim": self.hidden_dim,
+                    "num_layers": self.num_layers,
+                    "num_heads": self.num_heads,
+                    "ff_dim": self.ff_dim,
+                    "max_seq_len": self.max_seq_len,
+                    "norm_type": self.norm_type,
+                    "activation_type": self.activation_type,
+                    "residual_type": self.residual_type,
+                    "pos_encoding_type": self.pos_encoding_type,
+                    "dropout": self.dropout,
+                },
+            },
+            path,
+        )
 
     def load(self, path: str) -> None:
         """Load model parameters."""
         checkpoint = torch.load(path, map_location=self.device)
-        self.load_state_dict(checkpoint['model_state_dict'])
+        self.load_state_dict(checkpoint["model_state_dict"])
 
     def _estimate_memory_usage(self) -> dict[str, float]:
         """Estimate memory usage."""

@@ -3,7 +3,6 @@ Multi-head attention mechanism for the Transformer Intuition Lab.
 Pure NumPy implementation for educational purposes.
 """
 
-
 import numpy as np
 
 
@@ -115,13 +114,13 @@ class MultiHeadAttention:
 
         # Store intermediate values for backward pass
         self._cache = {
-            'input': x,
-            'q': q,
-            'k': k,
-            'v': v,
-            'attention_output': attention_output,
-            'attention_weights': attention_weights,
-            'mask': mask
+            "input": x,
+            "q": q,
+            "k": k,
+            "v": v,
+            "attention_output": attention_output,
+            "attention_weights": attention_weights,
+            "mask": mask,
         }
 
         return output, stats
@@ -161,15 +160,15 @@ class MultiHeadAttention:
         Returns:
             Tuple of (grad_input, gradients_dict)
         """
-        if not hasattr(self, '_cache'):
+        if not hasattr(self, "_cache"):
             raise RuntimeError("Forward pass must be called before backward pass")
 
-        x = self._cache['input']
-        q = self._cache['q']
-        k = self._cache['k']
-        v = self._cache['v']
-        attention_output = self._cache['attention_output']
-        attention_weights = self._cache['attention_weights']
+        x = self._cache["input"]
+        q = self._cache["q"]
+        k = self._cache["k"]
+        v = self._cache["v"]
+        attention_output = self._cache["attention_output"]
+        attention_weights = self._cache["attention_weights"]
 
         batch_size, seq_len, _ = grad_output.shape
 
@@ -219,25 +218,34 @@ class MultiHeadAttention:
 
         # Return gradients
         gradients = {
-            'w_q': grad_w_q,
-            'w_k': grad_w_k,
-            'w_v': grad_w_v,
-            'w_o': grad_w_o,
-            'b_q': grad_b_q,
-            'b_k': grad_b_k,
-            'b_v': grad_b_v,
-            'b_o': grad_b_o
+            "w_q": grad_w_q,
+            "w_k": grad_w_k,
+            "w_v": grad_w_v,
+            "w_o": grad_w_o,
+            "b_q": grad_b_q,
+            "b_k": grad_b_k,
+            "b_v": grad_b_v,
+            "b_o": grad_b_o,
         }
 
         return grad_input, gradients
 
     def get_parameters(self) -> list[np.ndarray]:
         """Get list of parameters for optimization."""
-        return [self.w_q, self.w_k, self.w_v, self.w_o, self.b_q, self.b_k, self.b_v, self.b_o]
+        return [
+            self.w_q,
+            self.w_k,
+            self.w_v,
+            self.w_o,
+            self.b_q,
+            self.b_k,
+            self.b_v,
+            self.b_o,
+        ]
 
     def get_parameter_names(self) -> list[str]:
         """Get list of parameter names."""
-        return ['w_q', 'w_k', 'w_v', 'w_o', 'b_q', 'b_k', 'b_v', 'b_o']
+        return ["w_q", "w_k", "w_v", "w_o", "b_q", "b_k", "b_v", "b_o"]
 
 
 def create_causal_mask(seq_len: int) -> np.ndarray:

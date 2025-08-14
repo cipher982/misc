@@ -3,7 +3,6 @@ Normalization modules for the Transformer Intuition Lab.
 Pure NumPy implementations for educational purposes.
 """
 
-
 import numpy as np
 
 
@@ -115,9 +114,8 @@ def get_normalization_module(norm_type: str, hidden_dim: int) -> LayerNorm | RMS
     """Factory function to create normalization modules."""
     if norm_type == "LayerNorm":
         return LayerNorm(hidden_dim)
-    elif norm_type == "RMSNorm":
+    if norm_type == "RMSNorm":
         return RMSNorm(hidden_dim)
-    elif norm_type == "None":
+    if norm_type == "None":
         return None
-    else:
-        raise ValueError(f"Unknown normalization type: {norm_type}")
+    raise ValueError(f"Unknown normalization type: {norm_type}")

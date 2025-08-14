@@ -2,11 +2,10 @@
 Pytest configuration and fixtures for transformer testing.
 """
 
-import pytest
-import numpy as np
 import tempfile
-import os
-from typing import Any
+
+import numpy as np
+import pytest
 
 from transformerlab.backends.factory import create_transformer, list_backends
 from transformerlab.core.tokenizer import CharTokenizer
@@ -90,18 +89,21 @@ def temp_model_dir():
 def trained_transformer(backend_name, small_config, sample_input_data):
     """Fixture that provides a transformer with some training."""
     transformer = create_transformer(backend_name, **small_config)
-    
+
     # Train for a few steps if backend supports it
-    if hasattr(transformer, 'train_step'):
+    if hasattr(transformer, "train_step"):
         try:
             # Create simple optimizer
-            if backend_name == 'numpy':
-                from transformerlab.backends.numpy_backend.optimizer import create_numpy_optimizer
-                optimizer = create_numpy_optimizer('sgd', learning_rate=0.01)
+            if backend_name == "numpy":
+                from transformerlab.backends.numpy_backend.optimizer import (
+                    create_numpy_optimizer,
+                )
+
+                optimizer = create_numpy_optimizer("sgd", learning_rate=0.01)
             else:
                 # For other backends, we'll skip training
                 return transformer
-            
+
             # Train for 2 steps
             for _ in range(2):
                 inputs = np.array(sample_input_data["single_input"])
@@ -110,7 +112,7 @@ def trained_transformer(backend_name, small_config, sample_input_data):
         except Exception:
             # If training fails, just return the initialized transformer
             pass
-    
+
     return transformer
 
 
@@ -127,7 +129,7 @@ def performance_test_configs():
             "ff_dim": 16,
         },
         {
-            "name": "small", 
+            "name": "small",
             "vocab_size": 20,
             "hidden_dim": 16,
             "num_layers": 2,
@@ -147,25 +149,29 @@ def performance_test_configs():
 
 class TestDataGenerator:
     """Helper class for generating test data."""
-    
+
     @staticmethod
-    def create_sequence_data(vocab_size: int, seq_len: int, batch_size: int = 1) -> dict[str, np.ndarray]:
+    def create_sequence_data(
+        vocab_size: int, seq_len: int, batch_size: int = 1
+    ) -> dict[str, np.ndarray]:
         """Create random sequence data for testing."""
         np.random.seed(42)  # For reproducible tests
-        
+
         inputs = np.random.randint(1, vocab_size, size=(batch_size, seq_len))
         targets = np.random.randint(1, vocab_size, size=(batch_size, seq_len))
-        
+
         return {
             "inputs": inputs,
             "targets": targets,
         }
-    
+
     @staticmethod
-    def create_text_data(tokenizer, text: str = "hello world test") -> dict[str, np.ndarray]:
+    def create_text_data(
+        tokenizer, text: str = "hello world test"
+    ) -> dict[str, np.ndarray]:
         """Create tokenized text data."""
         tokens = tokenizer.encode(text)
-        
+
         return {
             "text": text,
             "tokens": tokens,
@@ -188,7 +194,7 @@ def integration_test_marker():
 
 
 # Mark slow tests
-@pytest.fixture  
+@pytest.fixture
 def slow_test_marker():
     """Marker for slow tests."""
     return pytest.mark.slow
@@ -198,14 +204,23 @@ def slow_test_marker():
 def pytest_configure(config):
     """Configure custom pytest markers."""
     config.addinivalue_line("markers", "integration: marks tests as integration tests")
-    config.addinivalue_line("markers", "slow: marks tests as slow tests") 
-    config.addinivalue_line("markers", "backend_specific: marks tests that are backend-specific")
+    config.addinivalue_line("markers", "slow: marks tests as slow tests")
+    config.addinivalue_line(
+        "markers", "backend_specific: marks tests that are backend-specific"
+    )
 
 
 def skip_if_backend_unavailable(backend_name: str):
     """Skip test if backend is not available."""
     try:
-        create_transformer(backend_name, vocab_size=10, hidden_dim=8, num_layers=1, num_heads=2, ff_dim=16)
+        create_transformer(
+            backend_name,
+            vocab_size=10,
+            hidden_dim=8,
+            num_layers=1,
+            num_heads=2,
+            ff_dim=16,
+        )
         return False
     except Exception:
         return True
@@ -216,8 +231,7 @@ def setup_test_environment():
     """Setup test environment before each test."""
     # Seed random number generators for reproducible tests
     np.random.seed(42)
-    
+
     # You could add more environment setup here
-    yield
-    
+
     # Cleanup after test if needed

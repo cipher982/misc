@@ -8,8 +8,8 @@ and efficient computation using PyTorch operations.
 from typing import Any
 
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
+from torch import nn
 
 from ..abstract import AbstractFeedForward
 
@@ -25,7 +25,9 @@ class TorchFeedForward(AbstractFeedForward, nn.Module):
         residual_type: str = "Pre-LN",
     ):
         # Initialize both parent classes
-        AbstractFeedForward.__init__(self, hidden_dim, ff_dim, activation_type, residual_type)
+        AbstractFeedForward.__init__(
+            self, hidden_dim, ff_dim, activation_type, residual_type
+        )
         nn.Module.__init__(self)
 
         # Linear layers
@@ -36,7 +38,9 @@ class TorchFeedForward(AbstractFeedForward, nn.Module):
         self.activation = self._get_activation_fn(activation_type)
 
         # Dropout (optional)
-        self.dropout = nn.Dropout(0.1) if residual_type in ["Pre-LN", "Post-LN"] else None
+        self.dropout = (
+            nn.Dropout(0.1) if residual_type in ["Pre-LN", "Post-LN"] else None
+        )
 
         # Initialize weights
         self._init_weights()
@@ -55,14 +59,13 @@ class TorchFeedForward(AbstractFeedForward, nn.Module):
         """Get PyTorch activation function."""
         if activation_type == "ReLU":
             return nn.ReLU()
-        elif activation_type == "GeLU":
+        if activation_type == "GeLU":
             return nn.GELU()
-        elif activation_type == "Swish" or activation_type == "SiLU":
+        if activation_type == "Swish" or activation_type == "SiLU":
             return nn.SiLU()  # Swish is also called SiLU in PyTorch
-        elif activation_type == "SwiGLU":
+        if activation_type == "SwiGLU":
             return self._swiglu_activation
-        else:
-            return nn.Identity()  # Linear activation
+        return nn.Identity()  # Linear activation
 
     def _swiglu_activation(self, x: torch.Tensor) -> torch.Tensor:
         """SwiGLU activation function implementation."""
@@ -71,9 +74,7 @@ class TorchFeedForward(AbstractFeedForward, nn.Module):
         return F.silu(x1) * x2
 
     def forward(
-        self,
-        x: torch.Tensor,
-        norm_module: Any | None = None
+        self, x: torch.Tensor, norm_module: Any | None = None
     ) -> tuple[torch.Tensor, dict[str, Any]]:
         """Forward pass through feed-forward network."""
         batch_size, seq_len, hidden_dim = x.size()
@@ -121,7 +122,7 @@ class TorchFeedForward(AbstractFeedForward, nn.Module):
         input_tensor: torch.Tensor,
         hidden: torch.Tensor,
         output: torch.Tensor,
-        final_output: torch.Tensor
+        final_output: torch.Tensor,
     ) -> dict[str, Any]:
         """Compute feed-forward statistics."""
         with torch.no_grad():
@@ -142,7 +143,9 @@ class TorchFeedForward(AbstractFeedForward, nn.Module):
 
         return stats
 
-    def backward(self, grad_output: torch.Tensor) -> tuple[torch.Tensor, dict[str, Any]]:
+    def backward(
+        self, grad_output: torch.Tensor
+    ) -> tuple[torch.Tensor, dict[str, Any]]:
         """Backward pass (handled automatically by PyTorch)."""
         # This is handled automatically by PyTorch's autograd
         # We maintain the interface for compatibility
@@ -151,15 +154,25 @@ class TorchFeedForward(AbstractFeedForward, nn.Module):
         grad_input = torch.zeros_like(grad_output)
 
         gradients = {
-            'linear1.weight': self.linear1.weight.grad if self.linear1.weight.grad is not None else torch.zeros_like(self.linear1.weight),
-            'linear1.bias': self.linear1.bias.grad if self.linear1.bias.grad is not None else torch.zeros_like(self.linear1.bias),
-            'linear2.weight': self.linear2.weight.grad if self.linear2.weight.grad is not None else torch.zeros_like(self.linear2.weight),
-            'linear2.bias': self.linear2.bias.grad if self.linear2.bias.grad is not None else torch.zeros_like(self.linear2.bias),
+            "linear1.weight": self.linear1.weight.grad
+            if self.linear1.weight.grad is not None
+            else torch.zeros_like(self.linear1.weight),
+            "linear1.bias": self.linear1.bias.grad
+            if self.linear1.bias.grad is not None
+            else torch.zeros_like(self.linear1.bias),
+            "linear2.weight": self.linear2.weight.grad
+            if self.linear2.weight.grad is not None
+            else torch.zeros_like(self.linear2.weight),
+            "linear2.bias": self.linear2.bias.grad
+            if self.linear2.bias.grad is not None
+            else torch.zeros_like(self.linear2.bias),
         }
 
         # Convert to numpy for compatibility
-        gradients = {k: v.detach().cpu().numpy() if isinstance(v, torch.Tensor) else v
-                     for k, v in gradients.items()}
+        gradients = {
+            k: v.detach().cpu().numpy() if isinstance(v, torch.Tensor) else v
+            for k, v in gradients.items()
+        }
 
         return grad_input.detach().cpu().numpy(), gradients
 

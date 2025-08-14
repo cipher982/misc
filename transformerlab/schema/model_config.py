@@ -2,10 +2,15 @@
 Enhanced ModelConfig with corrected mathematics and modern transformer support.
 """
 
-from pydantic import BaseModel, ConfigDict, ValidationError, model_validator, computed_field, field_validator
-from typing import Literal, Optional
-import math
-import warnings
+from typing import Literal
+
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    computed_field,
+    field_validator,
+    model_validator,
+)
 
 
 class ModelConfig(BaseModel):
@@ -13,16 +18,16 @@ class ModelConfig(BaseModel):
     Production-ready transformer configuration with:
     - Cross-field validation ensuring mathematical consistency
     - Modern architecture support (GQA/MQA, SwiGLU, RoPE, etc.)
-    - Accurate parameter/memory/FLOPs estimation 
+    - Accurate parameter/memory/FLOPs estimation
     - Hardware-aware optimization hints
     """
-    
+
     model_config = ConfigDict(frozen=True, extra="forbid")
 
     # Core architecture - these define the model size and capacity
     hidden_dim: int
     num_heads: int
-    num_kv_heads: Optional[int] = None  # For GQA/MQA - None means standard MHA
+    num_kv_heads: int | None = None  # For GQA/MQA - None means standard MHA
     ff_mult: float = 4.0  # FFN multiplier instead of raw ff_dim for flexibility
     num_layers: int
 
@@ -105,7 +110,9 @@ class ModelConfig(BaseModel):
                     f"1 and num_heads ({self.num_heads})"
                 )
             elif self.num_heads % self.num_kv_heads != 0:
-                valid_kv = [k for k in range(1, self.num_heads + 1) if self.num_heads % k == 0]
+                valid_kv = [
+                    k for k in range(1, self.num_heads + 1) if self.num_heads % k == 0
+                ]
                 errors.append(
                     f"num_heads ({self.num_heads}) must be divisible by "
                     f"num_kv_heads ({self.num_kv_heads}). Valid: {valid_kv}"
@@ -167,10 +174,14 @@ class ModelConfig(BaseModel):
             )
 
         if self.head_dim > 128:
-            warnings.append(f"Large head_dim ({self.head_dim}) may hurt attention quality")
+            warnings.append(
+                f"Large head_dim ({self.head_dim}) may hurt attention quality"
+            )
 
         if self.head_dim < 32:
-            warnings.append(f"Small head_dim ({self.head_dim}) may underutilize compute")
+            warnings.append(
+                f"Small head_dim ({self.head_dim}) may underutilize compute"
+            )
 
         if self.ff_mult < 2.5 and self.activation_type == "SwiGLU":
             warnings.append("SwiGLU typically uses ff_mult >= 2.5 for good performance")
@@ -180,7 +191,7 @@ class ModelConfig(BaseModel):
     def estimate_parameters(self) -> int:
         """
         Calculate total parameters with corrected math.
-        
+
         Components:
         - Token embeddings: vocab_size * hidden_dim
         - Output projection: hidden_dim * vocab_size (if not tied)
@@ -216,10 +227,12 @@ class ModelConfig(BaseModel):
 
         return total
 
-    def estimate_memory_mb(self, batch_size: int = 1, include_optimizer: bool = False) -> dict:
+    def estimate_memory_mb(
+        self, batch_size: int = 1, include_optimizer: bool = False
+    ) -> dict:
         """
         Fixed KV-cache math and memory estimation.
-        
+
         Returns breakdown of memory usage in MB.
         """
         bytes_per_param = {"float32": 4, "float16": 2, "bfloat16": 2}[self.dtype]
@@ -231,8 +244,13 @@ class ModelConfig(BaseModel):
         # KV cache: 2 tensors (K,V) * layers * batch * seq * kv_heads * head_dim
         # This was the key bug fix - proper KV head dimensionality
         kv_memory = (
-            2 * self.num_layers * batch_size * self.seq_len *
-            self.effective_kv_heads * self.head_dim * bytes_per_param
+            2
+            * self.num_layers
+            * batch_size
+            * self.seq_len
+            * self.effective_kv_heads
+            * self.head_dim
+            * bytes_per_param
         ) / (1024 * 1024)
 
         # Activation memory (rough estimate assuming gradient checkpointing)
@@ -248,16 +266,18 @@ class ModelConfig(BaseModel):
             "kv_cache_mb": kv_memory,
             "activations_mb": activation_memory,
             "optimizer_mb": param_memory * 4 if include_optimizer else 0,
-            "total_mb": total
+            "total_mb": total,
         }
 
-    def estimate_flops_per_token(self, mode: Literal["prefill", "decode"] = "prefill") -> dict:
+    def estimate_flops_per_token(
+        self, mode: Literal["prefill", "decode"] = "prefill"
+    ) -> dict:
         """
         Corrected FLOPs estimation with clearer token-wise computation.
-        
+
         Args:
             mode: "prefill" uses full sequence length, "decode" uses length 1
-            
+
         Returns:
             Dictionary with FLOPs breakdown per token.
         """
@@ -270,7 +290,7 @@ class ModelConfig(BaseModel):
         ctx_len = self.seq_len if mode == "prefill" else 1
 
         # Per layer, per token FLOPs
-        # QKV projections: Q(d²) + K(d*kv_d) + V(d*kv_d) where kv_d = d*kv_heads/heads  
+        # QKV projections: Q(d²) + K(d*kv_d) + V(d*kv_d) where kv_d = d*kv_heads/heads
         kv_dim = d * kv_heads // self.num_heads
         qkv_flops = d * d + 2 * d * kv_dim
 
@@ -295,7 +315,8 @@ class ModelConfig(BaseModel):
 
         return {
             f"total_flops_per_token_{mode}": total_flops,
-            f"attention_flops_{mode}": (qkv_flops + attn_compute_flops + attn_out_flops) * self.num_layers,
+            f"attention_flops_{mode}": (qkv_flops + attn_compute_flops + attn_out_flops)
+            * self.num_layers,
             f"ffn_flops_{mode}": ffn_flops * self.num_layers,
-            "context_length": ctx_len
+            "context_length": ctx_len,
         }

@@ -20,7 +20,7 @@ class PythonLayerNorm(AbstractNormalization):
 
         # Initialize scale and shift parameters
         self.gamma = [1.0] * hidden_dim  # Scale parameter
-        self.beta = [0.0] * hidden_dim   # Shift parameter
+        self.beta = [0.0] * hidden_dim  # Shift parameter
 
         # Cache for backward pass
         self._cache = {}
@@ -48,7 +48,9 @@ class PythonLayerNorm(AbstractNormalization):
                 print(f"    Step 1: Mean = {mean_val:.6f}")
 
                 # Step 2: Compute variance
-                variance = sum((val - mean_val)**2 for val in x[batch][seq]) / hidden_dim
+                variance = (
+                    sum((val - mean_val) ** 2 for val in x[batch][seq]) / hidden_dim
+                )
                 batch_variances.append(variance)
                 print(f"    Step 2: Variance = {variance:.6f}")
 
@@ -62,7 +64,9 @@ class PythonLayerNorm(AbstractNormalization):
                     normalized = (x[batch][seq][dim] - mean_val) / std
 
                     # Apply learnable parameters
-                    result[batch][seq][dim] = self.gamma[dim] * normalized + self.beta[dim]
+                    result[batch][seq][dim] = (
+                        self.gamma[dim] * normalized + self.beta[dim]
+                    )
 
                 print("    Step 4: Applied gamma (scale) and beta (shift)")
 
@@ -71,28 +75,32 @@ class PythonLayerNorm(AbstractNormalization):
 
         # Cache intermediate values for backward pass
         self._cache = {
-            'input': copy_tensor(x),
-            'means': means,
-            'variances': variances,
-            'normalized': copy_tensor(result)  # This would be before gamma/beta in full impl
+            "input": copy_tensor(x),
+            "means": means,
+            "variances": variances,
+            "normalized": copy_tensor(
+                result
+            ),  # This would be before gamma/beta in full impl
         }
 
         print(f"  Final normalized output shape: {get_shape(result)}")
         return result
 
-    def backward(self, grad_output: list[list[list[float]]]) -> tuple[list[list[list[float]]], dict[str, Any]]:
+    def backward(
+        self, grad_output: list[list[list[float]]]
+    ) -> tuple[list[list[list[float]]], dict[str, Any]]:
         """Backward pass (simplified for educational purposes)."""
         if not self._cache:
             raise RuntimeError("Forward pass must be called before backward pass")
 
         print("[PythonLayerNorm] Backward pass (simplified)...")
 
-        input_shape = get_shape(self._cache['input'])
+        input_shape = get_shape(self._cache["input"])
         grad_input = zeros(input_shape)
 
         gradients = {
-            'gamma': [0.0] * len(self.gamma),
-            'beta': [0.0] * len(self.beta),
+            "gamma": [0.0] * len(self.gamma),
+            "beta": [0.0] * len(self.beta),
         }
 
         return grad_input, gradients
@@ -149,25 +157,27 @@ class PythonRMSNorm(AbstractNormalization):
 
         # Cache for backward pass
         self._cache = {
-            'input': copy_tensor(x),
-            'rms_values': rms_values,
+            "input": copy_tensor(x),
+            "rms_values": rms_values,
         }
 
         print(f"  Final RMS normalized output shape: {get_shape(result)}")
         return result
 
-    def backward(self, grad_output: list[list[list[float]]]) -> tuple[list[list[list[float]]], dict[str, Any]]:
+    def backward(
+        self, grad_output: list[list[list[float]]]
+    ) -> tuple[list[list[list[float]]], dict[str, Any]]:
         """Backward pass (simplified for educational purposes)."""
         if not self._cache:
             raise RuntimeError("Forward pass must be called before backward pass")
 
         print("[PythonRMSNorm] Backward pass (simplified)...")
 
-        input_shape = get_shape(self._cache['input'])
+        input_shape = get_shape(self._cache["input"])
         grad_input = zeros(input_shape)
 
         gradients = {
-            'gamma': [0.0] * len(self.gamma),
+            "gamma": [0.0] * len(self.gamma),
         }
 
         return grad_input, gradients
@@ -181,9 +191,8 @@ def create_normalization(norm_type: str, hidden_dim: int) -> AbstractNormalizati
     """Factory function for creating normalization layers."""
     if norm_type == "LayerNorm":
         return PythonLayerNorm(hidden_dim)
-    elif norm_type == "RMSNorm":
+    if norm_type == "RMSNorm":
         return PythonRMSNorm(hidden_dim)
-    elif norm_type == "None":
+    if norm_type == "None":
         return None
-    else:
-        raise ValueError(f"Unknown normalization type: {norm_type}")
+    raise ValueError(f"Unknown normalization type: {norm_type}")

@@ -3,7 +3,6 @@ Simple optimizers for the Transformer Intuition Lab.
 Pure NumPy implementation for educational purposes.
 """
 
-
 import numpy as np
 
 
@@ -19,7 +18,9 @@ class SGDOptimizer:
         """
         self.learning_rate = learning_rate
 
-    def update_parameters(self, parameters: list[np.ndarray], gradients: list[np.ndarray]) -> None:
+    def update_parameters(
+        self, parameters: list[np.ndarray], gradients: list[np.ndarray]
+    ) -> None:
         """
         Update parameters using gradients.
 
@@ -58,7 +59,9 @@ class AdamOptimizer:
         self.m = {}  # first moment estimates
         self.v = {}  # second moment estimates
 
-    def update_parameters(self, parameters: list[np.ndarray], gradients: list[np.ndarray]) -> None:
+    def update_parameters(
+        self, parameters: list[np.ndarray], gradients: list[np.ndarray]
+    ) -> None:
         """
         Update parameters using Adam algorithm.
 
@@ -103,7 +106,6 @@ def get_optimizer(optimizer_type: str, **kwargs) -> object:
     """
     if optimizer_type.lower() == "sgd":
         return SGDOptimizer(**kwargs)
-    elif optimizer_type.lower() == "adam":
+    if optimizer_type.lower() == "adam":
         return AdamOptimizer(**kwargs)
-    else:
-        raise ValueError(f"Unknown optimizer type: {optimizer_type}")
+    raise ValueError(f"Unknown optimizer type: {optimizer_type}")

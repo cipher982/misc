@@ -17,7 +17,9 @@ class NumPyAttention(AbstractAttention):
     def __init__(self, hidden_dim: int, num_heads: int, dropout: float = 0.0):
         super().__init__(hidden_dim, num_heads, dropout)
 
-        assert hidden_dim % num_heads == 0, f"hidden_dim ({hidden_dim}) must be divisible by num_heads ({num_heads})"
+        assert hidden_dim % num_heads == 0, (
+            f"hidden_dim ({hidden_dim}) must be divisible by num_heads ({num_heads})"
+        )
 
         self.head_dim = hidden_dim // num_heads
 
@@ -40,18 +42,22 @@ class NumPyAttention(AbstractAttention):
         """Apply dropout during training."""
         if self.training and self.dropout_rate > 0:
             # Create dropout mask
-            mask = np.random.binomial(1, 1 - self.dropout_rate, x.shape) / (1 - self.dropout_rate)
+            mask = np.random.binomial(1, 1 - self.dropout_rate, x.shape) / (
+                1 - self.dropout_rate
+            )
             return x * mask
         return x
 
-    def forward(self, x: np.ndarray, mask: np.ndarray | None = None) -> tuple[np.ndarray, dict[str, Any]]:
+    def forward(
+        self, x: np.ndarray, mask: np.ndarray | None = None
+    ) -> tuple[np.ndarray, dict[str, Any]]:
         """
         Forward pass through multi-head attention.
-        
+
         Args:
             x: Input tensor of shape (batch_size, seq_len, hidden_dim)
             mask: Optional attention mask
-            
+
         Returns:
             Tuple of (output, attention_stats)
         """
@@ -88,10 +94,14 @@ class NumPyAttention(AbstractAttention):
         attention_weights = self._apply_dropout(attention_weights)
 
         # Apply attention to values
-        attention_output = np.matmul(attention_weights, V)  # (batch, num_heads, seq, head_dim)
+        attention_output = np.matmul(
+            attention_weights, V
+        )  # (batch, num_heads, seq, head_dim)
 
         # Transpose back and reshape
-        attention_output = attention_output.transpose(0, 2, 1, 3)  # (batch, seq, num_heads, head_dim)
+        attention_output = attention_output.transpose(
+            0, 2, 1, 3
+        )  # (batch, seq, num_heads, head_dim)
         attention_output = attention_output.reshape(batch_size, seq_len, hidden_dim)
 
         # Final linear projection
@@ -112,13 +122,13 @@ class NumPyAttention(AbstractAttention):
 
         # Cache for backward pass
         self._cache = {
-            'input': x,
-            'Q': Q,
-            'K': K,
-            'V': V,
-            'attention_weights': attention_weights,
-            'attention_output': attention_output,
-            'scores': scores,
+            "input": x,
+            "Q": Q,
+            "K": K,
+            "V": V,
+            "attention_weights": attention_weights,
+            "attention_output": attention_output,
+            "scores": scores,
         }
 
         return output, attention_stats
@@ -126,28 +136,30 @@ class NumPyAttention(AbstractAttention):
     def backward(self, grad_output: np.ndarray) -> tuple[np.ndarray, dict[str, Any]]:
         """
         Backward pass through multi-head attention.
-        
+
         Args:
             grad_output: Gradient of loss w.r.t. output
-            
+
         Returns:
             Tuple of (grad_input, attention_gradients)
         """
-        if not hasattr(self, '_cache'):
+        if not hasattr(self, "_cache"):
             raise RuntimeError("Forward pass must be called before backward pass")
 
         # Retrieve cached values
-        x = self._cache['input']
-        Q = self._cache['Q']
-        K = self._cache['K']
-        V = self._cache['V']
-        attention_weights = self._cache['attention_weights']
-        attention_output = self._cache['attention_output']
+        x = self._cache["input"]
+        Q = self._cache["Q"]
+        K = self._cache["K"]
+        V = self._cache["V"]
+        attention_weights = self._cache["attention_weights"]
+        attention_output = self._cache["attention_output"]
 
         batch_size, seq_len, hidden_dim = x.shape
 
         # Backward through output projection
-        grad_W_o = np.matmul(attention_output.transpose(0, 2, 1), grad_output).sum(axis=0)
+        grad_W_o = np.matmul(attention_output.transpose(0, 2, 1), grad_output).sum(
+            axis=0
+        )
         grad_b_o = grad_output.sum(axis=(0, 1))
         grad_attention_output = np.matmul(grad_output, self.W_o.T)
 
@@ -157,17 +169,24 @@ class NumPyAttention(AbstractAttention):
         ).transpose(0, 2, 1, 3)
 
         # Backward through attention operation
-        grad_attention_weights = np.matmul(grad_attention_output, V.transpose(0, 1, 3, 2))
-        grad_V = np.matmul(attention_weights.transpose(0, 1, 3, 2), grad_attention_output)
+        grad_attention_weights = np.matmul(
+            grad_attention_output, V.transpose(0, 1, 3, 2)
+        )
+        grad_V = np.matmul(
+            attention_weights.transpose(0, 1, 3, 2), grad_attention_output
+        )
 
         # Backward through softmax
         grad_scores = attention_weights * (
-            grad_attention_weights - np.sum(grad_attention_weights * attention_weights, axis=-1, keepdims=True)
+            grad_attention_weights
+            - np.sum(grad_attention_weights * attention_weights, axis=-1, keepdims=True)
         )
 
         # Backward through scaled dot-product
         grad_Q = np.matmul(grad_scores, K) / np.sqrt(self.head_dim)
-        grad_K = np.matmul(grad_scores.transpose(0, 1, 3, 2), Q) / np.sqrt(self.head_dim)
+        grad_K = np.matmul(grad_scores.transpose(0, 1, 3, 2), Q) / np.sqrt(
+            self.head_dim
+        )
 
         # Transpose back to original shape
         grad_Q = grad_Q.transpose(0, 2, 1, 3).reshape(batch_size, seq_len, hidden_dim)
@@ -185,21 +204,21 @@ class NumPyAttention(AbstractAttention):
 
         # Gradient w.r.t. input
         grad_input = (
-            np.matmul(grad_Q, self.W_q.T) +
-            np.matmul(grad_K, self.W_k.T) +
-            np.matmul(grad_V, self.W_v.T)
+            np.matmul(grad_Q, self.W_q.T)
+            + np.matmul(grad_K, self.W_k.T)
+            + np.matmul(grad_V, self.W_v.T)
         )
 
         # Collect gradients
         gradients = {
-            'W_q': grad_W_q,
-            'W_k': grad_W_k,
-            'W_v': grad_W_v,
-            'W_o': grad_W_o,
-            'b_q': grad_b_q,
-            'b_k': grad_b_k,
-            'b_v': grad_b_v,
-            'b_o': grad_b_o,
+            "W_q": grad_W_q,
+            "W_k": grad_W_k,
+            "W_v": grad_W_v,
+            "W_o": grad_W_o,
+            "b_q": grad_b_q,
+            "b_k": grad_b_k,
+            "b_v": grad_b_v,
+            "b_o": grad_b_o,
         }
 
         return grad_input, gradients
@@ -207,12 +226,18 @@ class NumPyAttention(AbstractAttention):
     def get_parameters(self) -> list[np.ndarray]:
         """Get trainable parameters."""
         return [
-            self.W_q, self.W_k, self.W_v, self.W_o,
-            self.b_q, self.b_k, self.b_v, self.b_o
+            self.W_q,
+            self.W_k,
+            self.W_v,
+            self.W_o,
+            self.b_q,
+            self.b_k,
+            self.b_v,
+            self.b_o,
         ]
 
     def get_attention_weights(self) -> np.ndarray | None:
         """Get attention weights for visualization."""
-        if hasattr(self, '_cache') and 'attention_weights' in self._cache:
-            return self._cache['attention_weights']
+        if hasattr(self, "_cache") and "attention_weights" in self._cache:
+            return self._cache["attention_weights"]
         return None

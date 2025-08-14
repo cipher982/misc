@@ -2,7 +2,6 @@
 Simple character-level tokenizer for the Transformer Intuition Lab.
 """
 
-
 import numpy as np
 
 

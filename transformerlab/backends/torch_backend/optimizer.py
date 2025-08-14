@@ -8,7 +8,7 @@ while leveraging production-ready implementations.
 from typing import Any
 
 import torch
-import torch.optim as optim
+from torch import optim
 
 from ..abstract import AbstractOptimizer
 
@@ -21,16 +21,13 @@ class TorchSGDOptimizer(AbstractOptimizer):
         parameters: list[torch.nn.Parameter],
         learning_rate: float = 0.01,
         momentum: float = 0.0,
-        weight_decay: float = 0.0
+        weight_decay: float = 0.0,
     ):
         super().__init__(learning_rate)
 
         # Create PyTorch SGD optimizer
         self.optimizer = optim.SGD(
-            parameters,
-            lr=learning_rate,
-            momentum=momentum,
-            weight_decay=weight_decay
+            parameters, lr=learning_rate, momentum=momentum, weight_decay=weight_decay
         )
 
         self.momentum = momentum
@@ -69,7 +66,7 @@ class TorchAdamOptimizer(AbstractOptimizer):
         beta1: float = 0.9,
         beta2: float = 0.999,
         eps: float = 1e-8,
-        weight_decay: float = 0.0
+        weight_decay: float = 0.0,
     ):
         super().__init__(learning_rate)
 
@@ -79,7 +76,7 @@ class TorchAdamOptimizer(AbstractOptimizer):
             lr=learning_rate,
             betas=(beta1, beta2),
             eps=eps,
-            weight_decay=weight_decay
+            weight_decay=weight_decay,
         )
 
         self.beta1 = beta1
@@ -120,7 +117,7 @@ class TorchAdamWOptimizer(AbstractOptimizer):
         beta1: float = 0.9,
         beta2: float = 0.999,
         eps: float = 1e-8,
-        weight_decay: float = 0.01
+        weight_decay: float = 0.01,
     ):
         super().__init__(learning_rate)
 
@@ -130,7 +127,7 @@ class TorchAdamWOptimizer(AbstractOptimizer):
             lr=learning_rate,
             betas=(beta1, beta2),
             eps=eps,
-            weight_decay=weight_decay
+            weight_decay=weight_decay,
         )
 
         self.beta1 = beta1
@@ -160,16 +157,13 @@ class TorchAdamWOptimizer(AbstractOptimizer):
 
 
 def create_torch_optimizer(
-    optimizer_type: str,
-    parameters: list[torch.nn.Parameter],
-    **kwargs
+    optimizer_type: str, parameters: list[torch.nn.Parameter], **kwargs
 ) -> AbstractOptimizer:
     """Factory function for creating PyTorch optimizers."""
     if optimizer_type.lower() == "sgd":
         return TorchSGDOptimizer(parameters, **kwargs)
-    elif optimizer_type.lower() == "adam":
+    if optimizer_type.lower() == "adam":
         return TorchAdamOptimizer(parameters, **kwargs)
-    elif optimizer_type.lower() == "adamw":
+    if optimizer_type.lower() == "adamw":
         return TorchAdamWOptimizer(parameters, **kwargs)
-    else:
-        raise ValueError(f"Unknown optimizer type: {optimizer_type}")
+    raise ValueError(f"Unknown optimizer type: {optimizer_type}")

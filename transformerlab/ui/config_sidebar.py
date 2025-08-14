@@ -4,30 +4,32 @@ Configuration sidebar UI components for the Transformer Intuition Lab.
 
 import streamlit as st
 
-from transformerlab.backends.factory import list_backends, get_backend_info
+from transformerlab.backends.factory import get_backend_info, list_backends
 
 
 def render_config_sidebar():
     """Render the configuration sidebar with all model settings."""
     with st.sidebar:
         st.header("🎛️ Model Configuration")
-        
+
         # Backend selection
         st.subheader("🔧 Backend")
         backend_options = list_backends()
-        backend_descriptions = {name: get_backend_info(name)['description'] for name in backend_options}
-        
+        backend_descriptions = {
+            name: get_backend_info(name)["description"] for name in backend_options
+        }
+
         selected_backend = st.selectbox(
             "Select Backend",
             backend_options,
-            help="Choose the transformer implementation backend"
+            help="Choose the transformer implementation backend",
         )
-        
+
         # Show backend info
         backend_info = get_backend_info(selected_backend)
         st.info(f"**{backend_info['description']}**\n\n{backend_info['features']}")
-        
-        if st.session_state.get('current_backend') != selected_backend:
+
+        if st.session_state.get("current_backend") != selected_backend:
             st.session_state.current_backend = selected_backend
             st.session_state.model = None  # Reset model when backend changes
             st.session_state.optimizer = None  # Reset optimizer when backend changes
@@ -84,18 +86,18 @@ def render_config_sidebar():
         num_steps = st.slider("Training Steps", 1, 50, 10, 1)
 
     return {
-        'corpus_file': corpus_file,
-        'hidden_dim': hidden_dim,
-        'num_layers': num_layers,
-        'num_heads': num_heads,
-        'ff_dim': ff_dim,
-        'norm_type': norm_type,
-        'residual_type': residual_type,
-        'activation_type': activation_type,
-        'pos_encoding_type': pos_encoding_type,
-        'batch_size': batch_size,
-        'seq_len': seq_len,
-        'num_steps': num_steps,
+        "corpus_file": corpus_file,
+        "hidden_dim": hidden_dim,
+        "num_layers": num_layers,
+        "num_heads": num_heads,
+        "ff_dim": ff_dim,
+        "norm_type": norm_type,
+        "residual_type": residual_type,
+        "activation_type": activation_type,
+        "pos_encoding_type": pos_encoding_type,
+        "batch_size": batch_size,
+        "seq_len": seq_len,
+        "num_steps": num_steps,
     }
 
 
@@ -109,17 +111,17 @@ def render_action_buttons(config):
 
         with col1:
             if st.button("🔄 Initialize Model"):
-                action_taken = ('initialize', config)
+                action_taken = ("initialize", config)
 
         with col2:
             if st.button("🎯 Train Model"):
                 if st.session_state.model is not None:
-                    action_taken = ('train', config)
+                    action_taken = ("train", config)
                 else:
                     st.error("Please initialize the model first!")
 
         if st.button("🗑️ Reset"):
-            action_taken = ('reset', None)
+            action_taken = ("reset", None)
 
         return action_taken
 
@@ -128,13 +130,13 @@ def render_experiment_controls():
     """Render experiment management controls."""
     with st.sidebar:
         st.subheader("📊 Experiments")
-        
+
         action_taken = None
-        
+
         if st.button("💾 Save Experiment"):
-            action_taken = ('save_experiment', None)
+            action_taken = ("save_experiment", None)
 
         if st.button("📈 Compare Experiments"):
-            action_taken = ('compare_experiments', None)
+            action_taken = ("compare_experiments", None)
 
         return action_taken

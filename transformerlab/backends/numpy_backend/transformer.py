@@ -1,7 +1,7 @@
 """
 NumPy implementation of complete transformer model.
 
-This implementation provides fast vectorized computation using NumPy 
+This implementation provides fast vectorized computation using NumPy
 while maintaining educational transparency and clarity.
 """
 
@@ -30,13 +30,20 @@ class NumPyTransformerBlock(AbstractTransformerBlock):
         dropout: float = 0.0,
     ):
         super().__init__(
-            hidden_dim, num_heads, ff_dim, norm_type,
-            activation_type, residual_type, dropout
+            hidden_dim,
+            num_heads,
+            ff_dim,
+            norm_type,
+            activation_type,
+            residual_type,
+            dropout,
         )
 
         # Create components
         self.attention = NumPyAttention(hidden_dim, num_heads, dropout)
-        self.feed_forward = NumPyFeedForward(hidden_dim, ff_dim, activation_type, residual_type)
+        self.feed_forward = NumPyFeedForward(
+            hidden_dim, ff_dim, activation_type, residual_type
+        )
 
         # Create normalization layers
         self.norm1 = create_numpy_normalization(norm_type, hidden_dim)
@@ -50,11 +57,15 @@ class NumPyTransformerBlock(AbstractTransformerBlock):
         """Apply dropout during training."""
         if self.training and self.dropout_rate > 0:
             # Create dropout mask
-            mask = np.random.binomial(1, 1 - self.dropout_rate, x.shape) / (1 - self.dropout_rate)
+            mask = np.random.binomial(1, 1 - self.dropout_rate, x.shape) / (
+                1 - self.dropout_rate
+            )
             return x * mask
         return x
 
-    def forward(self, x: np.ndarray, mask: np.ndarray | None = None) -> tuple[np.ndarray, dict[str, Any]]:
+    def forward(
+        self, x: np.ndarray, mask: np.ndarray | None = None
+    ) -> tuple[np.ndarray, dict[str, Any]]:
         """Forward pass through transformer block."""
         # Self-attention with residual connection
         if self.residual_type == "Pre-LN":
@@ -89,16 +100,16 @@ class NumPyTransformerBlock(AbstractTransformerBlock):
 
         # Cache for backward pass
         self._cache = {
-            'input': x,
-            'attn_output': attn_output,
-            'ff_output': ff_output,
+            "input": x,
+            "attn_output": attn_output,
+            "ff_output": ff_output,
         }
 
         return x, block_stats
 
     def backward(self, grad_output: np.ndarray) -> tuple[np.ndarray, dict[str, Any]]:
         """Backward pass through transformer block."""
-        if not hasattr(self, '_cache'):
+        if not hasattr(self, "_cache"):
             raise RuntimeError("Forward pass must be called before backward pass")
 
         # Backward through feed-forward
@@ -122,9 +133,9 @@ class NumPyTransformerBlock(AbstractTransformerBlock):
         params = []
         params.extend(self.attention.get_parameters())
         params.extend(self.feed_forward.get_parameters())
-        if self.norm1 and hasattr(self.norm1, 'get_parameters'):
+        if self.norm1 and hasattr(self.norm1, "get_parameters"):
             params.extend(self.norm1.get_parameters())
-        if self.norm2 and hasattr(self.norm2, 'get_parameters'):
+        if self.norm2 and hasattr(self.norm2, "get_parameters"):
             params.extend(self.norm2.get_parameters())
         return params
 
@@ -148,9 +159,18 @@ class NumPyTransformer(AbstractTransformer):
         backend_config: BackendConfig | None = None,
     ):
         super().__init__(
-            vocab_size, hidden_dim, num_layers, num_heads, ff_dim,
-            max_seq_len, norm_type, activation_type, residual_type,
-            pos_encoding_type, dropout, backend_config
+            vocab_size,
+            hidden_dim,
+            num_layers,
+            num_heads,
+            ff_dim,
+            max_seq_len,
+            norm_type,
+            activation_type,
+            residual_type,
+            pos_encoding_type,
+            dropout,
+            backend_config,
         )
 
         # Token embeddings
@@ -158,7 +178,9 @@ class NumPyTransformer(AbstractTransformer):
 
         # Positional encoding
         if pos_encoding_type == "Sinusoidal":
-            self.pos_encoding = self._create_sinusoidal_encoding(max_seq_len, hidden_dim)
+            self.pos_encoding = self._create_sinusoidal_encoding(
+                max_seq_len, hidden_dim
+            )
         elif pos_encoding_type == "Learnable":
             self.pos_encoding = np.random.randn(max_seq_len, hidden_dim) * 0.02
 
@@ -166,8 +188,13 @@ class NumPyTransformer(AbstractTransformer):
         self.blocks = []
         for _ in range(num_layers):
             block = NumPyTransformerBlock(
-                hidden_dim, num_heads, ff_dim, norm_type,
-                activation_type, residual_type, dropout
+                hidden_dim,
+                num_heads,
+                ff_dim,
+                norm_type,
+                activation_type,
+                residual_type,
+                dropout,
             )
             self.blocks.append(block)
 
@@ -189,7 +216,9 @@ class NumPyTransformer(AbstractTransformer):
         pe = np.zeros((max_len, hidden_dim))
         position = np.arange(0, max_len)[:, np.newaxis]
 
-        div_term = np.exp(np.arange(0, hidden_dim, 2) * -(math.log(10000.0) / hidden_dim))
+        div_term = np.exp(
+            np.arange(0, hidden_dim, 2) * -(math.log(10000.0) / hidden_dim)
+        )
 
         pe[:, 0::2] = np.sin(position * div_term)
         pe[:, 1::2] = np.cos(position * div_term)
@@ -203,7 +232,9 @@ class NumPyTransformer(AbstractTransformer):
         # Block weights are initialized in their constructors
         pass
 
-    def forward(self, x: np.ndarray, targets: np.ndarray | None = None) -> tuple[np.ndarray, dict[str, Any]]:
+    def forward(
+        self, x: np.ndarray, targets: np.ndarray | None = None
+    ) -> tuple[np.ndarray, dict[str, Any]]:
         """Forward pass through complete transformer."""
         # Convert lists to arrays if needed
         if isinstance(x, (list, tuple)):
@@ -222,7 +253,9 @@ class NumPyTransformer(AbstractTransformer):
             embeddings = embeddings + pos_enc
         elif self.pos_encoding_type == "Learnable":
             pos_indices = np.arange(seq_len)
-            pos_embeddings = self.pos_encoding[pos_indices][np.newaxis, :, :]  # (1, seq, hidden)
+            pos_embeddings = self.pos_encoding[pos_indices][
+                np.newaxis, :, :
+            ]  # (1, seq, hidden)
             embeddings = embeddings + pos_embeddings
 
         # Pass through transformer blocks
@@ -230,7 +263,9 @@ class NumPyTransformer(AbstractTransformer):
         layer_stats = []
 
         for i, block in enumerate(self.blocks):
-            h, block_stats = block.forward(h, mask=None)  # No causal mask for simplicity
+            h, block_stats = block.forward(
+                h, mask=None
+            )  # No causal mask for simplicity
             layer_stats.append(block_stats)
 
         # Final normalization
@@ -270,9 +305,9 @@ class NumPyTransformer(AbstractTransformer):
 
         # Cache intermediate values for backward pass
         self._forward_cache = {
-            'embeddings': embeddings,
-            'final_hidden': h,
-            'input': x,
+            "embeddings": embeddings,
+            "final_hidden": h,
+            "input": x,
         }
 
         return logits, model_stats
@@ -297,7 +332,9 @@ class NumPyTransformer(AbstractTransformer):
         num_tokens = np.sum(targets > 0)
         return loss / max(num_tokens, 1)
 
-    def backward(self, logits: np.ndarray, targets: np.ndarray) -> tuple[float, dict[str, Any]]:
+    def backward(
+        self, logits: np.ndarray, targets: np.ndarray
+    ) -> tuple[float, dict[str, Any]]:
         """Backward pass to compute gradients."""
         batch_size, seq_len, vocab_size = logits.shape
 
@@ -327,11 +364,13 @@ class NumPyTransformer(AbstractTransformer):
         grad_logits = grad_logits / max(num_tokens, 1)
 
         # Backward through output projection
-        if not hasattr(self, '_forward_cache'):
+        if not hasattr(self, "_forward_cache"):
             raise RuntimeError("Forward pass must be called before backward pass")
 
-        final_hidden = self._forward_cache['final_hidden']
-        grad_output_projection = np.tensordot(final_hidden, grad_logits, axes=([0, 1], [0, 1]))
+        final_hidden = self._forward_cache["final_hidden"]
+        grad_output_projection = np.tensordot(
+            final_hidden, grad_logits, axes=([0, 1], [0, 1])
+        )
         grad_output_bias = np.sum(grad_logits, axis=(0, 1))
         grad_final_hidden = np.matmul(grad_logits, self.output_projection.T)
 
@@ -340,13 +379,13 @@ class NumPyTransformer(AbstractTransformer):
         all_gradients = {}
 
         # Store gradients for output layers
-        all_gradients['output_projection'] = grad_output_projection
-        all_gradients['output_bias'] = grad_output_bias
+        all_gradients["output_projection"] = grad_output_projection
+        all_gradients["output_bias"] = grad_output_bias
 
         for i in reversed(range(len(self.blocks))):
             grad_hidden, block_gradients = self.blocks[i].backward(grad_hidden)
             for k, v in block_gradients.items():
-                all_gradients[f'block_{i}_{k}'] = v
+                all_gradients[f"block_{i}_{k}"] = v
 
         return loss, all_gradients
 
@@ -370,11 +409,11 @@ class NumPyTransformer(AbstractTransformer):
         # Build gradient list aligned with parameters by using parameter identity
         grad_list = []
         param_idx = 0
-        
+
         # Token embedding (index 0)
         grad_list.append(np.zeros_like(parameters[param_idx]))
         param_idx += 1
-        
+
         # Transformer blocks
         for block_idx, block in enumerate(self.blocks):
             block_params = block.get_parameters()
@@ -382,32 +421,36 @@ class NumPyTransformer(AbstractTransformer):
             for _ in block_params:
                 grad_list.append(np.zeros_like(parameters[param_idx]))
                 param_idx += 1
-        
+
         # Final normalization parameters (if they exist)
-        if self.final_norm and hasattr(self.final_norm, 'get_parameters'):
+        if self.final_norm and hasattr(self.final_norm, "get_parameters"):
             final_norm_params = self.final_norm.get_parameters()
             for _ in final_norm_params:
                 grad_list.append(np.zeros_like(parameters[param_idx]))
                 param_idx += 1
-        
+
         # Output projection - these have actual gradients
-        if 'output_projection' in gradients:
-            grad_list.append(gradients['output_projection'])
+        if "output_projection" in gradients:
+            grad_list.append(gradients["output_projection"])
         else:
             grad_list.append(np.zeros_like(parameters[param_idx]))
         param_idx += 1
-        
+
         # Output bias
-        if 'output_bias' in gradients:
-            grad_list.append(gradients['output_bias'])
+        if "output_bias" in gradients:
+            grad_list.append(gradients["output_bias"])
         else:
             grad_list.append(np.zeros_like(parameters[param_idx]))
         param_idx += 1
 
         # Verify alignment
-        assert len(grad_list) == len(parameters), f"Gradient list length {len(grad_list)} != parameter list length {len(parameters)}"
-        for i, (param, grad) in enumerate(zip(parameters, grad_list)):
-            assert param.shape == grad.shape, f"Parameter {i} shape {param.shape} != gradient shape {grad.shape}"
+        assert len(grad_list) == len(parameters), (
+            f"Gradient list length {len(grad_list)} != parameter list length {len(parameters)}"
+        )
+        for i, (param, grad) in enumerate(zip(parameters, grad_list, strict=False)):
+            assert param.shape == grad.shape, (
+                f"Parameter {i} shape {param.shape} != gradient shape {grad.shape}"
+            )
 
         # Update parameters
         optimizer.update_parameters(parameters, grad_list)
@@ -415,10 +458,7 @@ class NumPyTransformer(AbstractTransformer):
         return loss
 
     def generate(
-        self,
-        prompt: np.ndarray,
-        max_length: int = 50,
-        temperature: float = 1.0
+        self, prompt: np.ndarray, max_length: int = 50, temperature: float = 1.0
     ) -> np.ndarray:
         """Generate text autoregressively."""
         if isinstance(prompt, (list, tuple)):
@@ -439,7 +479,9 @@ class NumPyTransformer(AbstractTransformer):
             next_logits = logits[:, -1, :] / temperature
 
             # Apply softmax
-            exp_logits = np.exp(next_logits - np.max(next_logits, axis=-1, keepdims=True))
+            exp_logits = np.exp(
+                next_logits - np.max(next_logits, axis=-1, keepdims=True)
+            )
             probs = exp_logits / np.sum(exp_logits, axis=-1, keepdims=True)
 
             # Sample next tokens
@@ -471,7 +513,7 @@ class NumPyTransformer(AbstractTransformer):
             parameters.extend(block.get_parameters())
 
         # Add final normalization parameters
-        if self.final_norm and hasattr(self.final_norm, 'get_parameters'):
+        if self.final_norm and hasattr(self.final_norm, "get_parameters"):
             parameters.extend(self.final_norm.get_parameters())
 
         # Add output projection parameters
@@ -482,15 +524,15 @@ class NumPyTransformer(AbstractTransformer):
 
     def get_parameter_names(self) -> list[str]:
         """Get parameter names corresponding to get_parameters()."""
-        names = ['token_embedding']
+        names = ["token_embedding"]
 
         # Add transformer block parameter names
         for i, block in enumerate(self.blocks):
             # For now, use simplified names
-            names.extend([f'block_{i}_attention_params', f'block_{i}_ff_params'])
+            names.extend([f"block_{i}_attention_params", f"block_{i}_ff_params"])
 
         # Add output projection parameter names
-        names.extend(['output_projection', 'output_bias'])
+        names.extend(["output_projection", "output_bias"])
 
         return names
 
@@ -506,30 +548,30 @@ class NumPyTransformer(AbstractTransformer):
         import pickle
 
         save_dict = {
-            'parameters': self.get_parameters(),
-            'config': {
-                'vocab_size': self.vocab_size,
-                'hidden_dim': self.hidden_dim,
-                'num_layers': self.num_layers,
-                'num_heads': self.num_heads,
-                'ff_dim': self.ff_dim,
-                'max_seq_len': self.max_seq_len,
-                'norm_type': self.norm_type,
-                'activation_type': self.activation_type,
-                'residual_type': self.residual_type,
-                'pos_encoding_type': self.pos_encoding_type,
-                'dropout': self.dropout,
-            }
+            "parameters": self.get_parameters(),
+            "config": {
+                "vocab_size": self.vocab_size,
+                "hidden_dim": self.hidden_dim,
+                "num_layers": self.num_layers,
+                "num_heads": self.num_heads,
+                "ff_dim": self.ff_dim,
+                "max_seq_len": self.max_seq_len,
+                "norm_type": self.norm_type,
+                "activation_type": self.activation_type,
+                "residual_type": self.residual_type,
+                "pos_encoding_type": self.pos_encoding_type,
+                "dropout": self.dropout,
+            },
         }
 
-        with open(path, 'wb') as f:
+        with open(path, "wb") as f:
             pickle.dump(save_dict, f)
 
     def load(self, path: str) -> None:
         """Load model parameters."""
         import pickle
 
-        with open(path, 'rb') as f:
+        with open(path, "rb") as f:
             save_dict = pickle.load(f)
 
         # Load parameters back into model

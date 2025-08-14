@@ -3,7 +3,6 @@ Training and inference UI components for the Transformer Intuition Lab.
 """
 
 import os
-import random
 from typing import Any
 
 import matplotlib.pyplot as plt
@@ -19,7 +18,9 @@ def initialize_model(config: dict[str, Any]):
     """Initialize the transformer model with given configuration."""
     try:
         # Load corpus
-        corpus_path = os.path.join(os.path.dirname(__file__), "..", "data", config['corpus_file'])
+        corpus_path = os.path.join(
+            os.path.dirname(__file__), "..", "data", config["corpus_file"]
+        )
         text, tokenizer = load_corpus(corpus_path)
 
         # Store in session state
@@ -27,23 +28,23 @@ def initialize_model(config: dict[str, Any]):
         st.session_state.tokenizer = tokenizer
 
         # Get current backend
-        backend_name = st.session_state.get('current_backend', 'numpy')
-        
+        backend_name = st.session_state.get("current_backend", "numpy")
+
         # Create model with selected backend
         # Use verbose=False for python backend in web interface to keep console clean
         verbose = backend_name != "python"
-        
+
         model = create_transformer(
             backend_name=backend_name,
             vocab_size=tokenizer.vocab_size,
-            hidden_dim=config['hidden_dim'],
-            num_layers=config['num_layers'],
-            num_heads=config['num_heads'],
-            ff_dim=config['ff_dim'],
-            norm_type=config['norm_type'],
-            activation_type=config['activation_type'],
-            residual_type=config['residual_type'],
-            pos_encoding_type=config['pos_encoding_type'],
+            hidden_dim=config["hidden_dim"],
+            num_layers=config["num_layers"],
+            num_heads=config["num_heads"],
+            ff_dim=config["ff_dim"],
+            norm_type=config["norm_type"],
+            activation_type=config["activation_type"],
+            residual_type=config["residual_type"],
+            pos_encoding_type=config["pos_encoding_type"],
             verbose=verbose,
         )
 
@@ -67,9 +68,9 @@ def train_model(config: dict[str, Any]):
     tokenizer = st.session_state.tokenizer
     text = st.session_state.text
 
-    batch_size = config['batch_size']
-    seq_len = config['seq_len']
-    num_steps = config['num_steps']
+    batch_size = config["batch_size"]
+    seq_len = config["seq_len"]
+    num_steps = config["num_steps"]
 
     # Create training data
     tokens = tokenizer.encode(text)
@@ -92,16 +93,18 @@ def train_model(config: dict[str, Any]):
         batch_targets = np.array(batch_targets)
 
         # Initialize optimizer if not exists or backend changed
-        backend_name = st.session_state.get('current_backend', 'numpy')
-        if (not hasattr(st.session_state, 'optimizer') or 
-            st.session_state.optimizer is None or
-            st.session_state.get('optimizer_backend') != backend_name):
+        backend_name = st.session_state.get("current_backend", "numpy")
+        if (
+            not hasattr(st.session_state, "optimizer")
+            or st.session_state.optimizer is None
+            or st.session_state.get("optimizer_backend") != backend_name
+        ):
             st.session_state.optimizer = create_backend_optimizer(backend_name, model)
             st.session_state.optimizer_backend = backend_name
-        
+
         # Training step
         loss = model.train_step(batch_tokens, batch_targets, st.session_state.optimizer)
-        
+
         # Get stats for display
         logits, stats = model.forward(batch_tokens, batch_targets)
 
@@ -117,33 +120,50 @@ def train_model(config: dict[str, Any]):
     st.success(f"✅ Training completed! Final loss: {model.loss_history[-1]:.4f}")
 
 
-def create_backend_optimizer(backend_name: str, model, optimizer_type: str = "adam", learning_rate: float = 0.001):
+def create_backend_optimizer(
+    backend_name: str, model, optimizer_type: str = "adam", learning_rate: float = 0.001
+):
     """Create optimizer appropriate for the backend."""
     if backend_name == "numpy":
-        from transformerlab.backends.numpy_backend.optimizer import create_numpy_optimizer
+        from transformerlab.backends.numpy_backend.optimizer import (
+            create_numpy_optimizer,
+        )
+
         return create_numpy_optimizer(optimizer_type, learning_rate=learning_rate)
-    
-    elif backend_name == "python":
-        from transformerlab.backends.python_backend.optimizer import PythonAdamOptimizer, PythonSGDOptimizer
+
+    if backend_name == "python":
+        from transformerlab.backends.python_backend.optimizer import (
+            PythonAdamOptimizer,
+            PythonSGDOptimizer,
+        )
+
         if optimizer_type.lower() == "adam":
             return PythonAdamOptimizer(learning_rate=learning_rate)
-        else:
-            return PythonSGDOptimizer(learning_rate=learning_rate)
-    
-    elif backend_name == "torch":
-        from transformerlab.backends.torch_backend.optimizer import create_torch_optimizer
+        return PythonSGDOptimizer(learning_rate=learning_rate)
+
+    if backend_name == "torch":
+        from transformerlab.backends.torch_backend.optimizer import (
+            create_torch_optimizer,
+        )
+
         # Get PyTorch parameters from the model
-        if hasattr(model, 'parameters'):
-            return create_torch_optimizer(optimizer_type, model.parameters(), learning_rate=learning_rate)
-        else:
-            # Fallback to numpy optimizer if torch parameters not available
-            from transformerlab.backends.numpy_backend.optimizer import create_numpy_optimizer
-            return create_numpy_optimizer(optimizer_type, learning_rate=learning_rate)
-    
-    else:
-        # Default fallback
-        from transformerlab.backends.numpy_backend.optimizer import create_numpy_optimizer
+        if hasattr(model, "parameters"):
+            return create_torch_optimizer(
+                optimizer_type, model.parameters(), learning_rate=learning_rate
+            )
+        # Fallback to numpy optimizer if torch parameters not available
+        from transformerlab.backends.numpy_backend.optimizer import (
+            create_numpy_optimizer,
+        )
+
         return create_numpy_optimizer(optimizer_type, learning_rate=learning_rate)
+
+    # Default fallback
+    from transformerlab.backends.numpy_backend.optimizer import (
+        create_numpy_optimizer,
+    )
+
+    return create_numpy_optimizer(optimizer_type, learning_rate=learning_rate)
 
 
 def generate_text(prompt: str, max_length: int = 100) -> str:

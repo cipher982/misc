@@ -3,7 +3,6 @@ Main transformer model for the Transformer Intuition Lab.
 Pure NumPy implementation for educational purposes.
 """
 
-
 import numpy as np
 
 from .attention import MultiHeadAttention
@@ -81,9 +80,9 @@ class TransformerBlock:
 
         # Store intermediate values for backward pass
         self._cache = {
-            'input': x,
-            'attn_output': attn_output,
-            'ff_input': x if self.residual_type == "Pre-LN" else x + attn_output
+            "input": x,
+            "attn_output": attn_output,
+            "ff_input": x if self.residual_type == "Pre-LN" else x + attn_output,
         }
 
         return ff_output, block_stats
@@ -98,12 +97,12 @@ class TransformerBlock:
         Returns:
             Tuple of (grad_input, gradients_dict)
         """
-        if not hasattr(self, '_cache'):
+        if not hasattr(self, "_cache"):
             raise RuntimeError("Forward pass must be called before backward pass")
 
-        x = self._cache['input']
-        attn_output = self._cache['attn_output']
-        ff_input = self._cache['ff_input']
+        x = self._cache["input"]
+        attn_output = self._cache["attn_output"]
+        ff_input = self._cache["ff_input"]
 
         # Backward through feed-forward
         grad_ff_input, ff_gradients = self.ff.backward(grad_output)
@@ -135,7 +134,9 @@ class TransformerBlock:
     def get_parameter_names(self) -> list[str]:
         """Get list of parameter names."""
         names = []
-        names.extend([f"attention_{name}" for name in self.attention.get_parameter_names()])
+        names.extend(
+            [f"attention_{name}" for name in self.attention.get_parameter_names()]
+        )
         names.extend([f"ff_{name}" for name in self.ff.get_parameter_names()])
         return names
 
@@ -292,9 +293,11 @@ class Transformer:
 
         # Cache intermediate values for backward pass
         self._forward_cache = {
-            'embeddings': embeddings,
-            'final_hidden': h,
-            'layer_outputs': [block._cache for block in self.blocks if hasattr(block, '_cache')]
+            "embeddings": embeddings,
+            "final_hidden": h,
+            "layer_outputs": [
+                block._cache for block in self.blocks if hasattr(block, "_cache")
+            ],
         }
 
         return logits, model_stats
@@ -449,11 +452,13 @@ class Transformer:
         grad_logits = grad_logits / max(num_tokens, 1)
 
         # Backward through output projection
-        if not hasattr(self, '_forward_cache'):
+        if not hasattr(self, "_forward_cache"):
             raise RuntimeError("Forward pass must be called before backward pass")
 
-        final_hidden = self._forward_cache['final_hidden']
-        grad_output_projection = np.tensordot(final_hidden, grad_logits, axes=([0, 1], [0, 1]))
+        final_hidden = self._forward_cache["final_hidden"]
+        grad_output_projection = np.tensordot(
+            final_hidden, grad_logits, axes=([0, 1], [0, 1])
+        )
         grad_output_bias = np.sum(grad_logits, axis=(0, 1))
         grad_final_hidden = np.matmul(grad_logits, self.output_projection.T)
 
@@ -462,13 +467,13 @@ class Transformer:
         all_gradients = {}
 
         # Store gradients for embedding and output layers
-        all_gradients['output_projection'] = grad_output_projection
-        all_gradients['output_bias'] = grad_output_bias
+        all_gradients["output_projection"] = grad_output_projection
+        all_gradients["output_bias"] = grad_output_bias
 
         for i in reversed(range(len(self.blocks))):
             grad_hidden, block_gradients = self.blocks[i].backward(grad_hidden)
             for k, v in block_gradients.items():
-                all_gradients[f'block_{i}_{k}'] = v
+                all_gradients[f"block_{i}_{k}"] = v
 
         # Gradient through embeddings (simplified - just skip for now)
         # In a full implementation, you'd update the embedding matrix here
@@ -481,7 +486,7 @@ class Transformer:
 
         Args:
             x: Input tokens of shape (batch_size, seq_len)
-            targets: Target tokens of shape (batch_size, seq_len)  
+            targets: Target tokens of shape (batch_size, seq_len)
             optimizer: Optimizer instance
 
         Returns:
@@ -531,14 +536,14 @@ class Transformer:
 
     def get_parameter_names(self) -> list[str]:
         """Get parameter names corresponding to get_parameters()."""
-        names = ['token_embedding']
+        names = ["token_embedding"]
 
         # Add transformer block parameter names
         for i, block in enumerate(self.blocks):
             block_names = block.get_parameter_names()
-            names.extend([f'block_{i}_{name}' for name in block_names])
+            names.extend([f"block_{i}_{name}" for name in block_names])
 
         # Add output projection parameter names
-        names.extend(['output_projection', 'output_bias'])
+        names.extend(["output_projection", "output_bias"])
 
         return names

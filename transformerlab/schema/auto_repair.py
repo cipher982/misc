@@ -8,19 +8,18 @@ This module provides:
 - Hardware-aware optimizations
 """
 
-from .model_config import ModelConfig, ValidationError
-from typing import Dict, Any, List, Tuple
 import urllib.parse
+from typing import Any
+
+from .model_config import ModelConfig, ValidationError
 
 
 def get_valid_heads(
-    hidden_dim: int, 
-    dtype: str = "bfloat16", 
-    attention_impl: str = "eager"
-) -> List[int]:
+    hidden_dim: int, dtype: str = "bfloat16", attention_impl: str = "eager"
+) -> list[int]:
     """
     Get valid head counts with preference for canonical head dimensions.
-    
+
     Returns heads ordered by:
     1. Canonical head dimensions {32, 64, 128} first
     2. Hardware alignment requirements
@@ -33,7 +32,7 @@ def get_valid_heads(
     if dtype in ["float16", "bfloat16"]:
         # Modern GPUs prefer head_dim multiple of 8 for tensor cores
         candidates = [h for h in candidates if (hidden_dim // h) % 8 == 0]
-    
+
     if attention_impl == "flash":
         # FlashAttention requires head_dim multiple of 16
         candidates = [h for h in candidates if (hidden_dim // h) % 16 == 0]
@@ -54,16 +53,15 @@ def get_valid_heads(
 
 
 def snap_config(
-    config: Dict[str, Any], 
-    locked_fields: List[str] = None
-) -> Tuple[Dict[str, Any], List[str]]:
+    config: dict[str, Any], locked_fields: list[str] = None
+) -> tuple[dict[str, Any], list[str]]:
     """
     Auto-repair configuration with minimal changes and diff tracking.
-    
+
     Args:
         config: Configuration dictionary to repair
         locked_fields: Fields that should not be modified during repair
-        
+
     Returns:
         Tuple of (fixed_config, list_of_changes_made)
     """
@@ -84,13 +82,13 @@ def snap_config(
             valid_heads = get_valid_heads(
                 fixed_config["hidden_dim"],
                 fixed_config.get("dtype", "bfloat16"),
-                fixed_config.get("attention_impl", "eager")
+                fixed_config.get("attention_impl", "eager"),
             )
             if valid_heads:
                 # Choose closest valid head count
                 new_heads = min(valid_heads, key=lambda x: abs(x - old_heads))
                 fixed_config["num_heads"] = new_heads
-                
+
                 old_head_dim = fixed_config["hidden_dim"] // old_heads
                 new_head_dim = fixed_config["hidden_dim"] // new_heads
                 changes.append(
@@ -102,7 +100,7 @@ def snap_config(
         if fixed_config.get("num_kv_heads") and "num_kv_heads" not in locked_fields:
             heads = fixed_config["num_heads"]
             kv_heads = fixed_config["num_kv_heads"]
-            
+
             if heads % kv_heads != 0:
                 # Find valid KV head counts
                 valid_kv = [k for k in range(1, heads + 1) if heads % k == 0]
@@ -121,7 +119,10 @@ def snap_config(
                 changes.append(f"ff_mult {ff_mult:.1f} → 4.0")
 
         # Fix device/dtype incompatibilities
-        if fixed_config.get("device") == "cpu" and fixed_config.get("dtype") == "float16":
+        if (
+            fixed_config.get("device") == "cpu"
+            and fixed_config.get("dtype") == "float16"
+        ):
             if "dtype" not in locked_fields:
                 fixed_config["dtype"] = "bfloat16"
                 changes.append("dtype float16 → bfloat16 (CPU compatibility)")
@@ -130,12 +131,11 @@ def snap_config(
 
 
 def create_repair_plans(
-    config: Dict[str, Any], 
-    locked_fields: List[str] = None
-) -> List[Dict[str, Any]]:
+    config: dict[str, Any], locked_fields: list[str] = None
+) -> list[dict[str, Any]]:
     """
     Generate multiple repair options with different strategies.
-    
+
     This gives users choice in how to resolve conflicts, with clear rationales
     for each approach.
     """
@@ -157,62 +157,68 @@ def create_repair_plans(
                 old_heads = config["num_heads"]
                 new_heads = min(valid_heads, key=lambda x: abs(x - old_heads))
                 plan_a["num_heads"] = new_heads
-                
+
                 new_head_dim = config["hidden_dim"] // new_heads
-                plans.append({
-                    "name": "Adjust Heads",
-                    "config": plan_a,
-                    "diff": f"num_heads {old_heads} → {new_heads}",
-                    "rationale": f"Keeps hidden_dim={config['hidden_dim']}, head_dim becomes {new_head_dim}"
-                })
+                plans.append(
+                    {
+                        "name": "Adjust Heads",
+                        "config": plan_a,
+                        "diff": f"num_heads {old_heads} → {new_heads}",
+                        "rationale": f"Keeps hidden_dim={config['hidden_dim']}, head_dim becomes {new_head_dim}",
+                    }
+                )
 
         # Strategy B: Adjust hidden_dim (keeps head count)
         if "divisible by num_heads" in error_msg and "hidden_dim" not in locked_fields:
             plan_b = config.copy()
             heads = config["num_heads"]
             old_dim = config["hidden_dim"]
-            
+
             # Find nearest valid hidden_dim (prefer multiples of 32 for efficiency)
             candidates = []
             for d in range(max(64, old_dim - 128), old_dim + 129, 32):
                 if d % heads == 0 and (d // heads) % 8 == 0:
                     candidates.append(d)
-            
+
             if candidates:
                 new_dim = min(candidates, key=lambda x: abs(x - old_dim))
                 plan_b["hidden_dim"] = new_dim
-                plans.append({
-                    "name": "Adjust Hidden Dim",
-                    "config": plan_b,
-                    "diff": f"hidden_dim {old_dim} → {new_dim}",
-                    "rationale": f"Keeps num_heads={heads}, head_dim becomes {new_dim//heads}"
-                })
+                plans.append(
+                    {
+                        "name": "Adjust Hidden Dim",
+                        "config": plan_b,
+                        "diff": f"hidden_dim {old_dim} → {new_dim}",
+                        "rationale": f"Keeps num_heads={heads}, head_dim becomes {new_dim // heads}",
+                    }
+                )
 
         # Strategy C: Enable GQA for efficiency (if not already using it)
         if not config.get("num_kv_heads") and "num_kv_heads" not in locked_fields:
             plan_c = config.copy()
             heads = config.get("num_heads", 8)
-            
+
             # Suggest 4:1 or 2:1 GQA ratios (common in modern models)
             for ratio in [4, 2]:
                 if heads % ratio == 0:
                     kv_heads = heads // ratio
                     plan_c["num_kv_heads"] = kv_heads
-                    plans.append({
-                        "name": f"Enable {ratio}:1 GQA",
-                        "config": plan_c,
-                        "diff": f"Add num_kv_heads={kv_heads}",
-                        "rationale": f"Reduces KV cache by {ratio}x, speeds up inference"
-                    })
+                    plans.append(
+                        {
+                            "name": f"Enable {ratio}:1 GQA",
+                            "config": plan_c,
+                            "diff": f"Add num_kv_heads={kv_heads}",
+                            "rationale": f"Reduces KV cache by {ratio}x, speeds up inference",
+                        }
+                    )
                     break
 
     return plans
 
 
-def config_to_url_params(config: Dict[str, Any]) -> str:
+def config_to_url_params(config: dict[str, Any]) -> str:
     """
     Serialize configuration to URL query parameters for sharing.
-    
+
     This enables easy sharing of configurations via URLs.
     """
     # Remove None values and convert to strings
@@ -220,10 +226,10 @@ def config_to_url_params(config: Dict[str, Any]) -> str:
     return urllib.parse.urlencode(simplified)
 
 
-def config_from_url_params(params: str) -> Dict[str, Any]:
+def config_from_url_params(params: str) -> dict[str, Any]:
     """
     Deserialize configuration from URL query parameters.
-    
+
     Handles proper type conversion for different field types.
     """
     parsed = urllib.parse.parse_qs(params)
@@ -231,15 +237,19 @@ def config_from_url_params(params: str) -> Dict[str, Any]:
 
     # Define field types for proper conversion
     int_fields = {
-        "hidden_dim", "num_heads", "num_kv_heads", "num_layers", 
-        "seq_len", "vocab_size"
+        "hidden_dim",
+        "num_heads",
+        "num_kv_heads",
+        "num_layers",
+        "seq_len",
+        "vocab_size",
     }
     float_fields = {"ff_mult", "rope_theta", "rope_fraction"}
     bool_fields = {"tie_weights"}
 
     for k, v_list in parsed.items():
         v = v_list[0]  # Take first value if multiple
-        
+
         if k in int_fields:
             config[k] = int(v)
         elif k in float_fields:
@@ -255,7 +265,7 @@ def config_from_url_params(params: str) -> Dict[str, Any]:
 def explain_constraint(field_name: str, error_msg: str) -> str:
     """
     Provide educational explanations for why certain constraints exist.
-    
+
     This helps users understand transformer architecture requirements.
     """
     explanations = {
@@ -278,17 +288,16 @@ def explain_constraint(field_name: str, error_msg: str) -> str:
             "RoPE (Rotary Position Embedding) applies complex rotations, "
             "requiring even dimensions to form real/imaginary pairs for "
             "each frequency component."
-        )
+        ),
     }
-    
+
     # Simple keyword matching to provide relevant explanations
     if "divisible by num_heads" in error_msg:
         return explanations["head_divisibility"]
-    elif "divisible by num_kv_heads" in error_msg:
+    if "divisible by num_kv_heads" in error_msg:
         return explanations["gqa_divisibility"]
-    elif "multiple of" in error_msg and "head_dim" in error_msg:
+    if "multiple of" in error_msg and "head_dim" in error_msg:
         return explanations["head_alignment"]
-    elif "RoPE dimension" in error_msg and "even" in error_msg:
+    if "RoPE dimension" in error_msg and "even" in error_msg:
         return explanations["rope_even"]
-    else:
-        return "This constraint ensures mathematical consistency in the transformer architecture."
+    return "This constraint ensures mathematical consistency in the transformer architecture."

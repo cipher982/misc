@@ -46,9 +46,7 @@ class PythonFeedForward(AbstractFeedForward):
         self._cache = {}
 
     def forward(
-        self,
-        x: list[list[list[float]]],
-        norm_module: Any | None = None
+        self, x: list[list[list[float]]], norm_module: Any | None = None
     ) -> tuple[list[list[list[float]]], dict[str, Any]]:
         """Forward pass through feed-forward network with explicit steps."""
         batch_size, seq_len, hidden_dim = get_shape(x)
@@ -73,7 +71,9 @@ class PythonFeedForward(AbstractFeedForward):
 
         # Step 3: Second linear transformation: h_activated @ w2 + b2
         print("  Step 3: Second linear transformation (ff_dim -> hidden)...")
-        output = add_3d(matmul_3d(h_activated, self.w2), self.b2)  # (batch, seq, hidden)
+        output = add_3d(
+            matmul_3d(h_activated, self.w2), self.b2
+        )  # (batch, seq, hidden)
         print(f"    Transformed back from {self.ff_dim} to {hidden_dim} dimensions")
 
         # Step 4: Apply residual connection
@@ -95,11 +95,11 @@ class PythonFeedForward(AbstractFeedForward):
 
         # Cache intermediate values for backward pass
         self._cache = {
-            'input': copy_tensor(x),
-            'h': copy_tensor(h),
-            'h_activated': copy_tensor(h_activated),
-            'output': copy_tensor(output),
-            'norm_module': norm_module
+            "input": copy_tensor(x),
+            "h": copy_tensor(h),
+            "h_activated": copy_tensor(h_activated),
+            "output": copy_tensor(output),
+            "norm_module": norm_module,
         }
 
         # Collect statistics
@@ -133,7 +133,9 @@ class PythonFeedForward(AbstractFeedForward):
             "residual_type": self.residual_type,
         }
 
-    def backward(self, grad_output: list[list[list[float]]]) -> tuple[list[list[list[float]]], dict[str, Any]]:
+    def backward(
+        self, grad_output: list[list[list[float]]]
+    ) -> tuple[list[list[list[float]]], dict[str, Any]]:
         """Backward pass (simplified for educational purposes)."""
         if not self._cache:
             raise RuntimeError("Forward pass must be called before backward pass")
@@ -143,14 +145,14 @@ class PythonFeedForward(AbstractFeedForward):
         # For educational purposes, we'll implement simplified gradients
         # In a full implementation, this would compute actual gradients
 
-        input_shape = get_shape(self._cache['input'])
+        input_shape = get_shape(self._cache["input"])
         grad_input = zeros(input_shape)
 
         gradients = {
-            'w1': zeros(get_shape(self.w1)),
-            'w2': zeros(get_shape(self.w2)),
-            'b1': [0.0] * len(self.b1),
-            'b2': [0.0] * len(self.b2),
+            "w1": zeros(get_shape(self.w1)),
+            "w2": zeros(get_shape(self.w2)),
+            "b1": [0.0] * len(self.b1),
+            "b2": [0.0] * len(self.b2),
         }
 
         return grad_input, gradients

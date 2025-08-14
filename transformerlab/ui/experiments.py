@@ -38,7 +38,7 @@ def compare_experiments():
     comparison_data = []
     for i, exp in enumerate(st.session_state.experiment_history):
         row = {
-            "Experiment": f"Exp {i+1}",
+            "Experiment": f"Exp {i + 1}",
             "Norm Type": exp["config"]["norm_type"],
             "Activation": exp["config"]["activation_type"],
             "Residual": exp["config"]["residual_type"],
@@ -56,7 +56,7 @@ def compare_experiments():
 
         for i, exp in enumerate(st.session_state.experiment_history):
             if exp["loss_history"]:
-                ax.plot(exp["loss_history"], label=f"Exp {i+1}")
+                ax.plot(exp["loss_history"], label=f"Exp {i + 1}")
 
         ax.set_xlabel("Training Step")
         ax.set_ylabel("Loss")

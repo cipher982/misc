@@ -13,6 +13,7 @@ from typing import Any
 
 class BackendType(Enum):
     """Available backend types."""
+
     NUMPY = "numpy"
     PYTHON = "python"
     TORCH = "torch"
@@ -21,6 +22,7 @@ class BackendType(Enum):
 @dataclass
 class BackendConfig:
     """Configuration for backend implementations."""
+
     backend_type: BackendType
     device: str = "cpu"
     dtype: str = "float32"
@@ -83,16 +85,18 @@ class AbstractAttention(ABC):
         self.dropout = dropout
 
         if hidden_dim % num_heads != 0:
-            raise ValueError(f"hidden_dim ({hidden_dim}) must be divisible by num_heads ({num_heads})")
+            raise ValueError(
+                f"hidden_dim ({hidden_dim}) must be divisible by num_heads ({num_heads})"
+            )
 
     @abstractmethod
     def forward(self, x: Any, mask: Any | None = None) -> tuple[Any, dict[str, Any]]:
         """Forward pass through attention.
-        
+
         Args:
             x: Input tensor of shape (batch_size, seq_len, hidden_dim)
             mask: Optional attention mask
-            
+
         Returns:
             Tuple of (output, attention_stats)
         """
@@ -130,13 +134,15 @@ class AbstractFeedForward(ABC):
         self.residual_type = residual_type
 
     @abstractmethod
-    def forward(self, x: Any, norm_module: Any | None = None) -> tuple[Any, dict[str, Any]]:
+    def forward(
+        self, x: Any, norm_module: Any | None = None
+    ) -> tuple[Any, dict[str, Any]]:
         """Forward pass through feed-forward network.
-        
+
         Args:
             x: Input tensor of shape (batch_size, seq_len, hidden_dim)
             norm_module: Optional normalization module
-            
+
         Returns:
             Tuple of (output, ff_stats)
         """
@@ -177,11 +183,11 @@ class AbstractTransformerBlock(ABC):
     @abstractmethod
     def forward(self, x: Any, mask: Any | None = None) -> tuple[Any, dict[str, Any]]:
         """Forward pass through transformer block.
-        
+
         Args:
             x: Input tensor of shape (batch_size, seq_len, hidden_dim)
             mask: Optional attention mask
-            
+
         Returns:
             Tuple of (output, block_stats)
         """
@@ -237,11 +243,11 @@ class AbstractTransformer(ABC):
     @abstractmethod
     def forward(self, x: Any, targets: Any | None = None) -> tuple[Any, dict[str, Any]]:
         """Forward pass through transformer.
-        
+
         Args:
             x: Input token indices of shape (batch_size, seq_len)
             targets: Target token indices for loss calculation
-            
+
         Returns:
             Tuple of (logits, model_stats)
         """
@@ -250,11 +256,11 @@ class AbstractTransformer(ABC):
     @abstractmethod
     def backward(self, logits: Any, targets: Any) -> tuple[float, dict[str, Any]]:
         """Backward pass to compute gradients.
-        
+
         Args:
             logits: Model output logits
             targets: Target token indices
-            
+
         Returns:
             Tuple of (loss, gradients_dict)
         """
@@ -263,12 +269,12 @@ class AbstractTransformer(ABC):
     @abstractmethod
     def train_step(self, x: Any, targets: Any, optimizer: AbstractOptimizer) -> float:
         """Single training step.
-        
+
         Args:
             x: Input tokens
             targets: Target tokens
             optimizer: Optimizer instance
-            
+
         Returns:
             Loss value
         """
@@ -276,18 +282,15 @@ class AbstractTransformer(ABC):
 
     @abstractmethod
     def generate(
-        self,
-        prompt: Any,
-        max_length: int = 50,
-        temperature: float = 1.0
+        self, prompt: Any, max_length: int = 50, temperature: float = 1.0
     ) -> Any:
         """Generate text from prompt.
-        
+
         Args:
             prompt: Input prompt tokens
             max_length: Maximum generation length
             temperature: Sampling temperature
-            
+
         Returns:
             Generated token sequence
         """

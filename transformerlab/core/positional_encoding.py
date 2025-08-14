@@ -3,7 +3,6 @@ Positional encoding modules for the Transformer Intuition Lab.
 Pure NumPy implementations for educational purposes.
 """
 
-
 import numpy as np
 
 
@@ -202,9 +201,8 @@ def get_positional_encoding(encoding_type: str, **kwargs) -> PositionalEncoding:
     """Factory function to create positional encoding modules."""
     if encoding_type == "Sinusoidal":
         return SinusoidalPE(kwargs.get("hidden_dim", 512))
-    elif encoding_type == "RoPE":
+    if encoding_type == "RoPE":
         return RoPE(kwargs.get("head_dim", 64))
-    elif encoding_type == "ALiBi":
+    if encoding_type == "ALiBi":
         return ALiBi(kwargs.get("num_heads", 8), kwargs.get("head_dim", 64))
-    else:
-        raise ValueError(f"Unknown positional encoding type: {encoding_type}")
+    raise ValueError(f"Unknown positional encoding type: {encoding_type}")

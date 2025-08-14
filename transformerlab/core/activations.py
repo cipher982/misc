@@ -3,7 +3,6 @@ Activation functions for the Transformer Intuition Lab.
 Pure NumPy implementations for educational purposes.
 """
 
-
 import numpy as np
 
 
@@ -38,14 +37,13 @@ class ActivationModule:
         """Get activation function by name."""
         if activation_type == "ReLU":
             return relu
-        elif activation_type == "GeLU":
+        if activation_type == "GeLU":
             return gelu
-        elif activation_type == "Swish":
+        if activation_type == "Swish":
             return swish
-        elif activation_type == "SwiGLU":
+        if activation_type == "SwiGLU":
             return swiglu
-        else:
-            raise ValueError(f"Unknown activation type: {activation_type}")
+        raise ValueError(f"Unknown activation type: {activation_type}")
 
     def forward(self, x: np.ndarray, gate: np.ndarray = None) -> np.ndarray:
         """Forward pass through activation function."""
@@ -53,8 +51,7 @@ class ActivationModule:
             if gate is None:
                 raise ValueError("SwiGLU requires a gate input")
             return self.activation_fn(x, gate)
-        else:
-            return self.activation_fn(x)
+        return self.activation_fn(x)
 
     def get_stats(self, x: np.ndarray, gate: np.ndarray = None) -> dict:
         """Get activation statistics for visualization."""

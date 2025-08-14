@@ -30,7 +30,9 @@ def gelu_derivative(x: np.ndarray) -> np.ndarray:
     """Derivative of GELU activation function (approximation)."""
     tanh_term = np.tanh(np.sqrt(2 / np.pi) * (x + 0.044715 * x**3))
     sech2_term = 1 - tanh_term**2
-    return 0.5 * (1 + tanh_term) + 0.5 * x * sech2_term * np.sqrt(2 / np.pi) * (1 + 3 * 0.044715 * x**2)
+    return 0.5 * (1 + tanh_term) + 0.5 * x * sech2_term * np.sqrt(2 / np.pi) * (
+        1 + 3 * 0.044715 * x**2
+    )
 
 
 def swish(x: np.ndarray) -> np.ndarray:
@@ -83,18 +85,22 @@ class NumPyFeedForward(AbstractFeedForward):
         """Apply dropout during training."""
         if self.training and self.dropout_rate > 0:
             # Create dropout mask
-            mask = np.random.binomial(1, 1 - self.dropout_rate, x.shape) / (1 - self.dropout_rate)
+            mask = np.random.binomial(1, 1 - self.dropout_rate, x.shape) / (
+                1 - self.dropout_rate
+            )
             return x * mask
         return x
 
-    def forward(self, x: np.ndarray, norm_layer: Any | None = None) -> tuple[np.ndarray, dict[str, Any]]:
+    def forward(
+        self, x: np.ndarray, norm_layer: Any | None = None
+    ) -> tuple[np.ndarray, dict[str, Any]]:
         """
         Forward pass through feed-forward network.
-        
+
         Args:
             x: Input tensor of shape (batch_size, seq_len, hidden_dim)
             norm_layer: Optional normalization layer (not used in this implementation)
-            
+
         Returns:
             Tuple of (output, ff_stats)
         """
@@ -123,9 +129,9 @@ class NumPyFeedForward(AbstractFeedForward):
 
         # Cache for backward pass
         self._cache = {
-            'input': x,
-            'h1': h1,
-            'h1_activated': h1_activated,
+            "input": x,
+            "h1": h1,
+            "h1_activated": h1_activated,
         }
 
         return output, ff_stats
@@ -133,20 +139,20 @@ class NumPyFeedForward(AbstractFeedForward):
     def backward(self, grad_output: np.ndarray) -> tuple[np.ndarray, dict[str, Any]]:
         """
         Backward pass through feed-forward network.
-        
+
         Args:
             grad_output: Gradient of loss w.r.t. output
-            
+
         Returns:
             Tuple of (grad_input, ff_gradients)
         """
-        if not hasattr(self, '_cache'):
+        if not hasattr(self, "_cache"):
             raise RuntimeError("Forward pass must be called before backward pass")
 
         # Retrieve cached values
-        x = self._cache['input']
-        h1 = self._cache['h1']
-        h1_activated = self._cache['h1_activated']
+        x = self._cache["input"]
+        h1 = self._cache["h1"]
+        h1_activated = self._cache["h1_activated"]
 
         # Backward through second linear layer
         grad_W2 = np.matmul(h1_activated.transpose(0, 2, 1), grad_output).sum(axis=0)
@@ -163,10 +169,10 @@ class NumPyFeedForward(AbstractFeedForward):
 
         # Collect gradients
         gradients = {
-            'W1': grad_W1,
-            'b1': grad_b1,
-            'W2': grad_W2,
-            'b2': grad_b2,
+            "W1": grad_W1,
+            "b1": grad_b1,
+            "W2": grad_W2,
+            "b2": grad_b2,
         }
 
         return grad_input, gradients

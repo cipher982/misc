@@ -4,7 +4,6 @@ NumPy implementation of optimizers.
 Provides SGD, Adam, and AdamW optimizers using pure NumPy operations.
 """
 
-
 import numpy as np
 
 from ..abstract import AbstractOptimizer
@@ -17,7 +16,7 @@ class NumPySGDOptimizer(AbstractOptimizer):
         self,
         learning_rate: float = 0.01,
         momentum: float = 0.0,
-        weight_decay: float = 0.0
+        weight_decay: float = 0.0,
     ):
         super().__init__(learning_rate)
         self.momentum = momentum
@@ -27,7 +26,9 @@ class NumPySGDOptimizer(AbstractOptimizer):
         self.velocity_buffers = None
         self.step_count = 0
 
-    def update_parameters(self, parameters: list[np.ndarray], gradients: list[np.ndarray]) -> None:
+    def update_parameters(
+        self, parameters: list[np.ndarray], gradients: list[np.ndarray]
+    ) -> None:
         """Update parameters using SGD with optional momentum."""
         if self.velocity_buffers is None:
             # Initialize momentum buffers
@@ -42,7 +43,9 @@ class NumPySGDOptimizer(AbstractOptimizer):
 
             # Update velocity (momentum)
             if self.momentum > 0:
-                self.velocity_buffers[i] = self.momentum * self.velocity_buffers[i] + grad
+                self.velocity_buffers[i] = (
+                    self.momentum * self.velocity_buffers[i] + grad
+                )
                 update = self.velocity_buffers[i]
             else:
                 update = grad
@@ -65,7 +68,7 @@ class NumPyAdamOptimizer(AbstractOptimizer):
         beta1: float = 0.9,
         beta2: float = 0.999,
         eps: float = 1e-8,
-        weight_decay: float = 0.0
+        weight_decay: float = 0.0,
     ):
         super().__init__(learning_rate)
         self.beta1 = beta1
@@ -78,7 +81,9 @@ class NumPyAdamOptimizer(AbstractOptimizer):
         self.v_buffers = None  # Second moment
         self.step_count = 0
 
-    def update_parameters(self, parameters: list[np.ndarray], gradients: list[np.ndarray]) -> None:
+    def update_parameters(
+        self, parameters: list[np.ndarray], gradients: list[np.ndarray]
+    ) -> None:
         """Update parameters using Adam optimizer."""
         if self.m_buffers is None:
             # Initialize moment buffers
@@ -96,11 +101,13 @@ class NumPyAdamOptimizer(AbstractOptimizer):
             self.m_buffers[i] = self.beta1 * self.m_buffers[i] + (1 - self.beta1) * grad
 
             # Update biased second moment estimate
-            self.v_buffers[i] = self.beta2 * self.v_buffers[i] + (1 - self.beta2) * (grad ** 2)
+            self.v_buffers[i] = self.beta2 * self.v_buffers[i] + (1 - self.beta2) * (
+                grad**2
+            )
 
             # Bias correction
-            m_hat = self.m_buffers[i] / (1 - self.beta1 ** self.step_count)
-            v_hat = self.v_buffers[i] / (1 - self.beta2 ** self.step_count)
+            m_hat = self.m_buffers[i] / (1 - self.beta1**self.step_count)
+            v_hat = self.v_buffers[i] / (1 - self.beta2**self.step_count)
 
             # Update parameters
             param -= self.learning_rate * m_hat / (np.sqrt(v_hat) + self.eps)
@@ -120,7 +127,7 @@ class NumPyAdamWOptimizer(AbstractOptimizer):
         beta1: float = 0.9,
         beta2: float = 0.999,
         eps: float = 1e-8,
-        weight_decay: float = 0.01
+        weight_decay: float = 0.01,
     ):
         super().__init__(learning_rate)
         self.beta1 = beta1
@@ -133,7 +140,9 @@ class NumPyAdamWOptimizer(AbstractOptimizer):
         self.v_buffers = None  # Second moment
         self.step_count = 0
 
-    def update_parameters(self, parameters: list[np.ndarray], gradients: list[np.ndarray]) -> None:
+    def update_parameters(
+        self, parameters: list[np.ndarray], gradients: list[np.ndarray]
+    ) -> None:
         """Update parameters using AdamW optimizer."""
         if self.m_buffers is None:
             # Initialize moment buffers
@@ -147,14 +156,18 @@ class NumPyAdamWOptimizer(AbstractOptimizer):
             self.m_buffers[i] = self.beta1 * self.m_buffers[i] + (1 - self.beta1) * grad
 
             # Update biased second moment estimate (without weight decay)
-            self.v_buffers[i] = self.beta2 * self.v_buffers[i] + (1 - self.beta2) * (grad ** 2)
+            self.v_buffers[i] = self.beta2 * self.v_buffers[i] + (1 - self.beta2) * (
+                grad**2
+            )
 
             # Bias correction
-            m_hat = self.m_buffers[i] / (1 - self.beta1 ** self.step_count)
-            v_hat = self.v_buffers[i] / (1 - self.beta2 ** self.step_count)
+            m_hat = self.m_buffers[i] / (1 - self.beta1**self.step_count)
+            v_hat = self.v_buffers[i] / (1 - self.beta2**self.step_count)
 
             # Update parameters with decoupled weight decay
-            param -= self.learning_rate * (m_hat / (np.sqrt(v_hat) + self.eps) + self.weight_decay * param)
+            param -= self.learning_rate * (
+                m_hat / (np.sqrt(v_hat) + self.eps) + self.weight_decay * param
+            )
 
     def zero_grad(self) -> None:
         """Zero out gradients (no-op for NumPy implementation)."""
@@ -163,16 +176,13 @@ class NumPyAdamWOptimizer(AbstractOptimizer):
 
 
 def create_numpy_optimizer(
-    optimizer_type: str,
-    learning_rate: float = 0.01,
-    **kwargs
+    optimizer_type: str, learning_rate: float = 0.01, **kwargs
 ) -> AbstractOptimizer:
     """Factory function for creating NumPy optimizers."""
     if optimizer_type.lower() == "sgd":
         return NumPySGDOptimizer(learning_rate, **kwargs)
-    elif optimizer_type.lower() == "adam":
+    if optimizer_type.lower() == "adam":
         return NumPyAdamOptimizer(learning_rate, **kwargs)
-    elif optimizer_type.lower() == "adamw":
+    if optimizer_type.lower() == "adamw":
         return NumPyAdamWOptimizer(learning_rate, **kwargs)
-    else:
-        raise ValueError(f"Unknown optimizer type: {optimizer_type}")
+    raise ValueError(f"Unknown optimizer type: {optimizer_type}")

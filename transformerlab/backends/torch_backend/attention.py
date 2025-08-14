@@ -10,8 +10,8 @@ import math
 from typing import Any
 
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
+from torch import nn
 
 from ..abstract import AbstractAttention
 
@@ -49,7 +49,9 @@ class TorchAttention(AbstractAttention, nn.Module):
             if module.bias is not None:
                 nn.init.zeros_(module.bias)
 
-    def forward(self, x: torch.Tensor, mask: torch.Tensor | None = None) -> tuple[torch.Tensor, dict[str, Any]]:
+    def forward(
+        self, x: torch.Tensor, mask: torch.Tensor | None = None
+    ) -> tuple[torch.Tensor, dict[str, Any]]:
         """Forward pass through multi-head attention."""
         batch_size, seq_len, hidden_dim = x.size()
 
@@ -64,11 +66,15 @@ class TorchAttention(AbstractAttention, nn.Module):
         v = v.view(batch_size, seq_len, self.num_heads, self.head_dim).transpose(1, 2)
 
         # Scaled dot-product attention
-        attention_output, attention_weights = self._scaled_dot_product_attention(q, k, v, mask)
+        attention_output, attention_weights = self._scaled_dot_product_attention(
+            q, k, v, mask
+        )
 
         # Concatenate heads: (batch, num_heads, seq, head_dim) -> (batch, seq, hidden)
-        attention_output = attention_output.transpose(1, 2).contiguous().view(
-            batch_size, seq_len, hidden_dim
+        attention_output = (
+            attention_output.transpose(1, 2)
+            .contiguous()
+            .view(batch_size, seq_len, hidden_dim)
         )
 
         # Final output projection
@@ -87,7 +93,7 @@ class TorchAttention(AbstractAttention, nn.Module):
         q: torch.Tensor,
         k: torch.Tensor,
         v: torch.Tensor,
-        mask: torch.Tensor | None = None
+        mask: torch.Tensor | None = None,
     ) -> tuple[torch.Tensor, torch.Tensor]:
         """Compute scaled dot-product attention efficiently."""
         # Compute attention scores: Q @ K^T / sqrt(d_k)
@@ -98,7 +104,7 @@ class TorchAttention(AbstractAttention, nn.Module):
             if mask.dim() == 2:
                 # Broadcast mask to (batch, num_heads, seq, seq)
                 mask = mask.unsqueeze(0).unsqueeze(0)
-            scores = scores.masked_fill(mask == 0, float('-inf'))
+            scores = scores.masked_fill(mask == 0, float("-inf"))
 
         # Apply softmax to get attention weights
         attention_weights = F.softmax(scores, dim=-1)
@@ -118,7 +124,7 @@ class TorchAttention(AbstractAttention, nn.Module):
         k: torch.Tensor,
         v: torch.Tensor,
         attention_weights: torch.Tensor,
-        output: torch.Tensor
+        output: torch.Tensor,
     ) -> dict[str, Any]:
         """Compute attention statistics."""
         with torch.no_grad():
@@ -135,12 +141,16 @@ class TorchAttention(AbstractAttention, nn.Module):
                 "attention_weights_min": attention_weights.min().item(),
                 "output_mean": output.mean().item(),
                 "output_std": output.std().item(),
-                "attention_weights": attention_weights[0].cpu().numpy(),  # First batch for viz
+                "attention_weights": attention_weights[0]
+                .cpu()
+                .numpy(),  # First batch for viz
             }
 
         return stats
 
-    def backward(self, grad_output: torch.Tensor) -> tuple[torch.Tensor, dict[str, Any]]:
+    def backward(
+        self, grad_output: torch.Tensor
+    ) -> tuple[torch.Tensor, dict[str, Any]]:
         """Backward pass (handled automatically by PyTorch)."""
         # In PyTorch, backward pass is automatic, but we need to maintain
         # the interface for compatibility
@@ -153,15 +163,25 @@ class TorchAttention(AbstractAttention, nn.Module):
         grad_input = torch.zeros_like(grad_output)
 
         gradients = {
-            'q_proj.weight': self.q_proj.weight.grad if self.q_proj.weight.grad is not None else torch.zeros_like(self.q_proj.weight),
-            'k_proj.weight': self.k_proj.weight.grad if self.k_proj.weight.grad is not None else torch.zeros_like(self.k_proj.weight),
-            'v_proj.weight': self.v_proj.weight.grad if self.v_proj.weight.grad is not None else torch.zeros_like(self.v_proj.weight),
-            'out_proj.weight': self.out_proj.weight.grad if self.out_proj.weight.grad is not None else torch.zeros_like(self.out_proj.weight),
+            "q_proj.weight": self.q_proj.weight.grad
+            if self.q_proj.weight.grad is not None
+            else torch.zeros_like(self.q_proj.weight),
+            "k_proj.weight": self.k_proj.weight.grad
+            if self.k_proj.weight.grad is not None
+            else torch.zeros_like(self.k_proj.weight),
+            "v_proj.weight": self.v_proj.weight.grad
+            if self.v_proj.weight.grad is not None
+            else torch.zeros_like(self.v_proj.weight),
+            "out_proj.weight": self.out_proj.weight.grad
+            if self.out_proj.weight.grad is not None
+            else torch.zeros_like(self.out_proj.weight),
         }
 
         # Convert to numpy for compatibility
-        gradients = {k: v.detach().cpu().numpy() if isinstance(v, torch.Tensor) else v
-                     for k, v in gradients.items()}
+        gradients = {
+            k: v.detach().cpu().numpy() if isinstance(v, torch.Tensor) else v
+            for k, v in gradients.items()
+        }
 
         return grad_input.detach().cpu().numpy(), gradients
 

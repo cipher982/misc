@@ -3,7 +3,6 @@ Visualization functions for the Transformer Intuition Lab.
 Uses matplotlib for plotting.
 """
 
-
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
@@ -150,7 +149,7 @@ def plot_comparison_chart(
     ax.set_ylabel("Value")
     ax.set_title(title)
     ax.set_xticks(x + width * (len(metrics) - 1) / 2)
-    ax.set_xticklabels([f"Config {i+1}" for i in range(len(configs))])
+    ax.set_xticklabels([f"Config {i + 1}" for i in range(len(configs))])
     ax.legend()
     ax.grid(True, alpha=0.3)
 

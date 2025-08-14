@@ -47,7 +47,9 @@ class PythonSGDOptimizer(AbstractOptimizer):
                     for k in range(len(param[i][j])):
                         param[i][j][k] = param[i][j][k] - lr * grad[i][j][k]
         else:
-            raise NotImplementedError(f"Parameter updates for {len(param_shape)}D tensors not implemented")
+            raise NotImplementedError(
+                f"Parameter updates for {len(param_shape)}D tensors not implemented"
+            )
 
     def zero_grad(self) -> None:
         """Zero out gradients (no-op for Python backend)."""
@@ -62,7 +64,7 @@ class PythonAdamOptimizer(AbstractOptimizer):
         learning_rate: float = 0.001,
         beta1: float = 0.9,
         beta2: float = 0.999,
-        eps: float = 1e-8
+        eps: float = 1e-8,
     ):
         super().__init__(learning_rate)
         self.beta1 = beta1
@@ -79,7 +81,9 @@ class PythonAdamOptimizer(AbstractOptimizer):
         self.t += 1
 
         print(f"[PythonAdamOptimizer] Adam update step {self.t}")
-        print(f"  Learning rate: {self.learning_rate}, beta1: {self.beta1}, beta2: {self.beta2}")
+        print(
+            f"  Learning rate: {self.learning_rate}, beta1: {self.beta1}, beta2: {self.beta2}"
+        )
 
         for i, (param, grad) in enumerate(zip(parameters, gradients, strict=False)):
             print(f"  Updating parameter {i} with shape {get_shape(param)}")
@@ -97,7 +101,9 @@ class PythonAdamOptimizer(AbstractOptimizer):
         shape = get_shape(tensor)
         return zeros(shape)
 
-    def _adam_update_tensor(self, param: Any, grad: Any, m: Any, v: Any, param_idx: int) -> None:
+    def _adam_update_tensor(
+        self, param: Any, grad: Any, m: Any, v: Any, param_idx: int
+    ) -> None:
         """Apply Adam update to a single tensor."""
         param_shape = get_shape(param)
 
@@ -111,13 +117,15 @@ class PythonAdamOptimizer(AbstractOptimizer):
                 v[i] = self.beta2 * v[i] + (1 - self.beta2) * (grad[i] ** 2)
 
                 # Compute bias-corrected first moment estimate
-                m_hat = m[i] / (1 - self.beta1 ** self.t)
+                m_hat = m[i] / (1 - self.beta1**self.t)
 
                 # Compute bias-corrected second moment estimate
-                v_hat = v[i] / (1 - self.beta2 ** self.t)
+                v_hat = v[i] / (1 - self.beta2**self.t)
 
                 # Update parameter
-                param[i] = param[i] - self.learning_rate * m_hat / (v_hat ** 0.5 + self.eps)
+                param[i] = param[i] - self.learning_rate * m_hat / (
+                    v_hat**0.5 + self.eps
+                )
 
         elif len(param_shape) == 2:
             # 2D tensor
@@ -127,19 +135,25 @@ class PythonAdamOptimizer(AbstractOptimizer):
                     m[i][j] = self.beta1 * m[i][j] + (1 - self.beta1) * grad[i][j]
 
                     # Update biased second moment estimate
-                    v[i][j] = self.beta2 * v[i][j] + (1 - self.beta2) * (grad[i][j] ** 2)
+                    v[i][j] = self.beta2 * v[i][j] + (1 - self.beta2) * (
+                        grad[i][j] ** 2
+                    )
 
                     # Compute bias-corrected first moment estimate
-                    m_hat = m[i][j] / (1 - self.beta1 ** self.t)
+                    m_hat = m[i][j] / (1 - self.beta1**self.t)
 
                     # Compute bias-corrected second moment estimate
-                    v_hat = v[i][j] / (1 - self.beta2 ** self.t)
+                    v_hat = v[i][j] / (1 - self.beta2**self.t)
 
                     # Update parameter
-                    param[i][j] = param[i][j] - self.learning_rate * m_hat / (v_hat ** 0.5 + self.eps)
+                    param[i][j] = param[i][j] - self.learning_rate * m_hat / (
+                        v_hat**0.5 + self.eps
+                    )
 
         else:
-            raise NotImplementedError(f"Adam updates for {len(param_shape)}D tensors not implemented")
+            raise NotImplementedError(
+                f"Adam updates for {len(param_shape)}D tensors not implemented"
+            )
 
     def zero_grad(self) -> None:
         """Zero out gradients (no-op for Python backend)."""

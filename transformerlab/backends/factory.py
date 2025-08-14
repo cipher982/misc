@@ -19,7 +19,11 @@ _BACKEND_REGISTRY: dict[BackendType, dict[str, Any]] = {
         "module": "transformerlab.backends.numpy_backend",
         "class": "NumPyTransformer",
         "description": "NumPy-based implementation with vectorized operations",
-        "features": ["Fast vectorized computation", "Educational transparency", "No external ML frameworks"],
+        "features": [
+            "Fast vectorized computation",
+            "Educational transparency",
+            "No external ML frameworks",
+        ],
         "pros": ["Fast for CPU", "Easy to understand", "Minimal dependencies"],
         "cons": ["CPU only", "Manual gradient computation", "Limited scalability"],
         "best_for": "Learning transformer internals and fast CPU inference",
@@ -28,8 +32,16 @@ _BACKEND_REGISTRY: dict[BackendType, dict[str, Any]] = {
         "module": "transformerlab.backends.python_backend.transformer",
         "class": "PythonTransformer",
         "description": "Pure Python implementation with explicit loops and operations",
-        "features": ["Maximum transparency", "Step-by-step execution", "No vectorization"],
-        "pros": ["Complete algorithmic clarity", "Easy debugging", "No library dependencies"],
+        "features": [
+            "Maximum transparency",
+            "Step-by-step execution",
+            "No vectorization",
+        ],
+        "pros": [
+            "Complete algorithmic clarity",
+            "Easy debugging",
+            "No library dependencies",
+        ],
         "cons": ["Very slow", "High memory usage", "Not practical for training"],
         "best_for": "Understanding algorithms step-by-step and debugging",
     },
@@ -47,7 +59,7 @@ _BACKEND_REGISTRY: dict[BackendType, dict[str, Any]] = {
 
 def list_backends() -> list[str]:
     """List all available backend names."""
-    return [backend.value for backend in _BACKEND_REGISTRY.keys()]
+    return [backend.value for backend in _BACKEND_REGISTRY]
 
 
 def get_backend_info(backend_name: str) -> dict[str, Any]:
@@ -76,10 +88,10 @@ def create_transformer(
     device: str = "cpu",
     dtype: str = "float32",
     verbose: bool = True,
-    **kwargs
+    **kwargs,
 ) -> AbstractTransformer:
     """Create a transformer model with the specified backend.
-    
+
     Args:
         backend_name: Name of backend to use ('numpy', 'python', 'torch')
         vocab_size: Vocabulary size
@@ -96,10 +108,10 @@ def create_transformer(
         device: Device to use ('cpu', 'cuda')
         dtype: Data type ('float32', 'float16')
         **kwargs: Additional backend-specific arguments
-        
+
     Returns:
         AbstractTransformer instance
-        
+
     Raises:
         ValueError: If backend is not available
         ImportError: If backend dependencies are missing
@@ -122,16 +134,11 @@ def create_transformer(
             f"Make sure all dependencies are installed. Error: {e}"
         )
     except AttributeError as e:
-        raise ImportError(
-            f"Backend {backend_name} is malformed: {e}"
-        )
+        raise ImportError(f"Backend {backend_name} is malformed: {e}")
 
     # Create backend configuration
     backend_config = BackendConfig(
-        backend_type=backend_type,
-        device=device,
-        dtype=dtype,
-        **kwargs
+        backend_type=backend_type, device=device, dtype=dtype, **kwargs
     )
 
     # Create and return transformer instance
@@ -149,7 +156,7 @@ def create_transformer(
             pos_encoding_type=pos_encoding_type,
             dropout=dropout,
             backend_config=backend_config,
-            **kwargs
+            **kwargs,
         )
         return transformer
     except (ValueError, AssertionError, TypeError) as e:
@@ -161,17 +168,15 @@ def create_transformer(
 
 
 def compare_backends(
-    backends: list[str],
-    model_config: dict[str, Any],
-    include_details: bool = True
+    backends: list[str], model_config: dict[str, Any], include_details: bool = True
 ) -> dict[str, Any]:
     """Compare multiple backends with the same configuration.
-    
+
     Args:
         backends: List of backend names to compare
         model_config: Configuration dict for model creation
         include_details: Whether to include detailed backend information
-        
+
     Returns:
         Dictionary with comparison results
     """
@@ -192,13 +197,15 @@ def compare_backends(
             }
 
             if include_details:
-                results[backend_name].update({
-                    "description": backend_info["description"],
-                    "features": backend_info["features"],
-                    "pros": backend_info["pros"],
-                    "cons": backend_info["cons"],
-                    "best_for": backend_info["best_for"],
-                })
+                results[backend_name].update(
+                    {
+                        "description": backend_info["description"],
+                        "features": backend_info["features"],
+                        "pros": backend_info["pros"],
+                        "cons": backend_info["cons"],
+                        "best_for": backend_info["best_for"],
+                    }
+                )
 
         except Exception as e:
             results[backend_name] = {
@@ -209,10 +216,12 @@ def compare_backends(
             if include_details:
                 try:
                     backend_info = get_backend_info(backend_name)
-                    results[backend_name].update({
-                        "description": backend_info["description"],
-                        "features": backend_info["features"],
-                    })
+                    results[backend_name].update(
+                        {
+                            "description": backend_info["description"],
+                            "features": backend_info["features"],
+                        }
+                    )
                 except:
                     pass
 
@@ -220,25 +229,22 @@ def compare_backends(
 
 
 def get_recommended_backend(
-    task: str = "learning",
-    device: str = "cpu",
-    model_size: str = "small"
+    task: str = "learning", device: str = "cpu", model_size: str = "small"
 ) -> str:
     """Get recommended backend for specific use case.
-    
+
     Args:
         task: Task type ('learning', 'training', 'inference', 'debugging')
         device: Target device ('cpu', 'cuda')
         model_size: Model size category ('small', 'medium', 'large')
-        
+
     Returns:
         Recommended backend name
     """
     if task == "debugging" or task == "step-by-step":
         return "python"
-    elif task == "learning" or (task == "training" and model_size == "small"):
+    if task == "learning" or (task == "training" and model_size == "small"):
         return "numpy"
-    elif device == "cuda" or model_size in ["medium", "large"]:
+    if device == "cuda" or model_size in ["medium", "large"]:
         return "torch"
-    else:
-        return "numpy"
+    return "numpy"
