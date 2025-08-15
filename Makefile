@@ -1,40 +1,29 @@
-# Transformer Intuition Lab - Makefile
-# Quick commands for running the multi-backend transformer system
+# Transformer Intuition Lab - Simplified
+# Educational transformer implementation with maximum transparency
 # REQUIRES: Python 3.13 ONLY
 
-.PHONY: help install test benchmark demo clean lint format
-
-# Note: All commands use 'uv run' which automatically manages Python 3.13 environment
+.PHONY: help install demo test benchmark clean check
 
 # Default target
 help:
-	@echo "🧠 Transformer Intuition Lab - Available Commands"
-	@echo "=================================================="
+	@echo "🧠 Transformer Intuition Lab - Simplified"
+	@echo "========================================"
 	@echo ""
 	@echo "🚀 Quick Start:"
-	@echo "  make install     - Install dependencies"
-	@echo "  make dev-install - Install with development dependencies"
-	@echo "  make demo        - Run interactive Streamlit demo"
-	@echo "  make test        - Test all backends (requires dev-install)"
-	@echo "  make benchmark   - Run performance comparison"
+	@echo "  make install - Install dependencies"
+	@echo "  make demo    - Run educational transformer demo"
+	@echo "  make test    - Run unit tests"
 	@echo ""
 	@echo "🧪 Testing:"
-	@echo "  make test        - Run comprehensive test suite"
-	@echo "  make test-backends - Quick backend compatibility test"
-	@echo "  make test-training - Test training functionality"
-	@echo "  make test-performance - Run performance tests (fast)"
-	@echo "  make test-slow   - Run comprehensive slow tests"
+	@echo "  make test           - Unit tests (25 tests)"
+	@echo "  make test-all       - All tests (unit + e2e + integration)"
+	@echo "  make test-e2e       - E2E UI tests with Playwright"
+	@echo "  make test-performance - Performance benchmarks"
+	@echo "  make test-integration - Integration tests"
 	@echo ""
 	@echo "🔧 Development:"
-	@echo "  make dev-install - Install with development dependencies (required for tests)"
-	@echo "  make lint        - Run code linting with ruff"
-	@echo "  make format      - Format code with ruff"  
-	@echo "  make check       - Run lint + format (fast, pre-commit ready)"
-	@echo "  make setup-precommit - Install pre-commit hooks"
-	@echo "  make clean       - Clean generated files"
-	@echo ""
-	@echo "📊 Analysis:"
-	@echo "  make compare     - Quick backend comparison"
+	@echo "  make check   - Lint and format code"
+	@echo "  make clean   - Clean generated files"
 	@echo ""
 
 # Installation
@@ -43,123 +32,54 @@ install:
 	uv sync
 	@echo "✅ Installation complete!"
 
-# Development installation with dev dependencies
-dev-install:
-	@echo "📦 Installing dependencies with dev tools..."
-	uv sync --group dev
-	@echo "✅ Development installation complete!"
-
-# Main demo application
+# Educational demo
 demo:
-	@echo "🚀 Starting Transformer Intuition Lab demo..."
+	@echo "🚀 Running Simple Transformer Demo..."
+	uv run python simple_transformer.py
+
+# Interactive UI demo
+ui:
+	@echo "🚀 Starting Interactive Demo UI..."
 	@echo "📱 Open http://localhost:8501 in your browser"
-	uv run streamlit run transformerlab/app.py
+	uv run streamlit run simple_demo.py
 
-# Test all backends (comprehensive)
+# Test simplified implementation
 test:
+	@echo "🧪 Running unit tests..."
+	uv run python -m pytest test_simplified.py -v
+
+# Run all tests including E2E
+test-all:
 	@echo "🧪 Running comprehensive test suite..."
-	uv run pytest transformerlab/tests/ -v
-	@echo "✅ All tests completed!"
+	uv run python -m pytest test_simplified.py test_e2e.py -v
 
-# Quick backend test
-test-backends:
-	@echo "🧪 Testing transformer backends (quick)..."
-	uv run python test_backends.py
-	@echo "✅ Backend testing complete!"
+# E2E tests for Streamlit UI
+test-e2e:
+	@echo "🌐 Running E2E tests with Playwright..."
+	uv run playwright install chromium --with-deps
+	uv run python -m pytest test_e2e.py -v --headed
 
-# Test specific components
-test-training:
-	@echo "🏋️ Testing training functionality..."
-	uv run pytest transformerlab/tests/test_training.py -v
-
+# Performance and benchmark tests
 test-performance:
 	@echo "⚡ Running performance tests..."
-	uv run pytest transformerlab/tests/test_performance.py -v -m "not slow"
+	uv run python -m pytest test_e2e.py::TestPerformanceBenchmarks -v
 
-test-slow:
-	@echo "🐌 Running slow/comprehensive tests..."
-	uv run pytest transformerlab/tests/ -v -m "slow"
-
+# Integration tests
 test-integration:
 	@echo "🔗 Running integration tests..."
-	uv run pytest transformerlab/tests/ -v -m "integration"
+	uv run python -m pytest test_e2e.py::TestFullPipeline -v
 
-# Performance benchmarking
-benchmark:
-	@echo "⚡ Running performance benchmarks..."
-	uv run python benchmarks.py
-	@echo "📊 Results saved to:"
-	@echo "  - benchmark_report.txt"
-	@echo "  - benchmark_results.json"
 
-# Quick backend comparison
-compare:
-	@echo "🔍 Quick backend comparison..."
-	@uv run python scripts/quick_compare.py
-
-# Test training functionality
-training:
-	@echo "🏋️ Testing training functionality..."
-	@uv run python scripts/quick_training.py
-
-# Development tools
-lint:
-	@echo "🔍 Running code linting..."
-	uv run ruff check transformerlab/ --fix
-
-format:
-	@echo "✨ Formatting code with ruff..."
-	uv run ruff format transformerlab/
-
-# Combined quality checks (fast - suitable for pre-commit)
-check: lint format
+# Code quality
+check:
+	@echo "🔍 Linting and formatting..."
+	uv run ruff check simple_*.py test_*.py --fix
+	uv run ruff format simple_*.py test_*.py
 	@echo "✅ Code quality checks completed!"
-
-# Install pre-commit hooks
-setup-precommit:
-	@echo "⚙️  Setting up pre-commit hooks..."
-	@if command -v pre-commit >/dev/null 2>&1; then \
-		pre-commit install; \
-		echo "✅ Pre-commit hooks installed!"; \
-		echo "   Hooks will run: make lint && make format"; \
-	else \
-		echo "⚠️  pre-commit not installed. Install with:"; \
-		echo "   uv tool install pre-commit"; \
-	fi
 
 # Cleanup
 clean:
 	@echo "🧹 Cleaning generated files..."
-	rm -f benchmark_report.txt
-	rm -f benchmark_results.json
-	rm -rf __pycache__
-	rm -rf transformerlab/__pycache__
-	rm -rf transformerlab/*/__pycache__
-	rm -rf transformerlab/*/*/__pycache__
-	rm -rf .pytest_cache
+	rm -rf __pycache__ .pytest_cache .ruff_cache
 	find . -name "*.pyc" -delete
-	find . -name "*.pyo" -delete
 	@echo "✅ Cleanup complete!"
-
-# Advanced targets
-docs:
-	@echo "📚 Generating documentation..."
-	@echo "📝 API Documentation available in code docstrings"
-	@echo "🌐 Run 'make demo' for interactive documentation"
-
-status:
-	@echo "📊 System Status:"
-	@echo "==============="
-	@echo "🐍 Python: $$(python3 --version)"
-	@echo "📦 UV: $$(uv --version 2>/dev/null || echo 'Not installed')"
-	@echo "🧠 Backends: $$(python3 -c 'from transformerlab.backends.factory import list_backends; print(\", \".join(list_backends()))' 2>/dev/null || echo 'Not available')"
-	@echo "📁 Project: $$(pwd)"
-
-# Full workflow for new users
-quickstart: install test demo
-	@echo ""
-	@echo "🎉 Quickstart complete!"
-	@echo "========================"
-	@echo "✅ Dependencies installed"
-	@echo "✅ All backends tested"
-	@echo "🚀 Demo is running at http://localhost:8501"
