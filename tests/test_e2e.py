@@ -20,7 +20,7 @@ class TestStreamlitApp:
         """Start Streamlit server for testing."""
         # Start Streamlit in background
         process = subprocess.Popen([
-            "uv", "run", "streamlit", "run", "simple_demo.py",
+            "uv", "run", "streamlit", "run", "app.py",
             "--server.port", "8502",  # Different port for testing
             "--server.headless", "true"
         ], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -106,8 +106,8 @@ class TestPerformanceBenchmarks:
     
     def test_benchmark_execution(self):
         """Test that our simplified transformer has good performance."""
-        from simple_transformer import SimpleTransformer
-        from simple_config import TransformerConfig
+        from transformer import SimpleTransformer
+        from config import TransformerConfig
         import time
         
         config = TransformerConfig(
@@ -127,8 +127,8 @@ class TestPerformanceBenchmarks:
     def test_transformer_performance(self):
         """Test transformer performance metrics."""
         # Import and run a quick performance test
-        from simple_transformer import SimpleTransformer
-        from simple_config import TransformerConfig
+        from transformer import SimpleTransformer
+        from config import TransformerConfig
         import time
         
         config = TransformerConfig(
@@ -156,8 +156,8 @@ class TestFullPipeline:
     
     def test_config_to_training_pipeline(self):
         """Test complete pipeline from config to training."""
-        from simple_transformer import SimpleTransformer
-        from simple_config import TransformerConfig
+        from transformer import SimpleTransformer
+        from config import TransformerConfig
         
         # Create config
         config = TransformerConfig(
@@ -181,8 +181,8 @@ class TestFullPipeline:
         
     def test_generation_pipeline(self):
         """Test complete text generation pipeline."""
-        from simple_transformer import SimpleTransformer
-        from simple_config import TransformerConfig
+        from transformer import SimpleTransformer
+        from config import TransformerConfig
         
         config = TransformerConfig(
             vocab_size=50,

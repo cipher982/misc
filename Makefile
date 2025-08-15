@@ -34,47 +34,47 @@ install:
 
 # Educational demo
 demo:
-	@echo "🚀 Running Simple Transformer Demo..."
-	uv run python simple_transformer.py
+	@echo "🚀 Running Transformer Demo..."
+	uv run python transformer.py
 
 # Interactive UI demo
 ui:
 	@echo "🚀 Starting Interactive Demo UI..."
 	@echo "📱 Open http://localhost:8501 in your browser"
-	uv run streamlit run simple_demo.py
+	uv run streamlit run app.py
 
-# Test simplified implementation
+# Test suite
 test:
 	@echo "🧪 Running unit tests..."
-	uv run python -m pytest test_simplified.py -v
+	uv run python -m pytest tests/test_simplified.py -v
 
 # Run all tests including E2E
 test-all:
 	@echo "🧪 Running comprehensive test suite..."
-	uv run python -m pytest test_simplified.py test_e2e.py -v
+	uv run python -m pytest tests/ -v
 
 # E2E tests for Streamlit UI
 test-e2e:
 	@echo "🌐 Running E2E tests with Playwright..."
 	uv run playwright install chromium --with-deps
-	uv run python -m pytest test_e2e.py -v --headed
+	uv run python -m pytest tests/test_e2e.py -v --headed
 
 # Performance and benchmark tests
 test-performance:
 	@echo "⚡ Running performance tests..."
-	uv run python -m pytest test_e2e.py::TestPerformanceBenchmarks -v
+	uv run python -m pytest tests/test_e2e.py::TestPerformanceBenchmarks -v
 
 # Integration tests
 test-integration:
 	@echo "🔗 Running integration tests..."
-	uv run python -m pytest test_e2e.py::TestFullPipeline -v
+	uv run python -m pytest tests/test_e2e.py::TestFullPipeline -v
 
 
 # Code quality
 check:
 	@echo "🔍 Linting and formatting..."
-	uv run ruff check simple_*.py test_*.py --fix
-	uv run ruff format simple_*.py test_*.py
+	uv run ruff check *.py tests/*.py --fix
+	uv run ruff format *.py tests/*.py
 	@echo "✅ Code quality checks completed!"
 
 # Cleanup

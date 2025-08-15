@@ -9,7 +9,7 @@ with extensive comments explaining the mathematical concepts.
 import math
 import random
 from typing import Any, Optional, List, Tuple, Dict
-from simple_config import TransformerConfig
+from config import TransformerConfig
 
 
 class SimpleTransformer:

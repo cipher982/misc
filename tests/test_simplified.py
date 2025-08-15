@@ -9,8 +9,8 @@ mathematical operations work as expected.
 import pytest
 import math
 import random
-from simple_config import TransformerConfig, tiny_transformer, small_transformer
-from simple_transformer import SimpleTransformer
+from config import TransformerConfig, tiny_transformer, small_transformer
+from transformer import SimpleTransformer
 
 
 class TestTransformerConfig:

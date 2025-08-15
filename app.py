@@ -9,8 +9,8 @@ import streamlit as st
 import matplotlib.pyplot as plt
 import numpy as np
 import random
-from simple_config import TransformerConfig, tiny_transformer, small_transformer
-from simple_transformer import SimpleTransformer
+from config import TransformerConfig, tiny_transformer, small_transformer
+from transformer import SimpleTransformer
 
 
 def main():
