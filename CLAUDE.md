@@ -1,38 +1,22 @@
 # Transformer Intuition Lab
 
-## What it is
-An educational toolkit that exposes the math and computation behind transformers—no black boxes.
+**Educational toolkit that exposes transformer math and computation—no black boxes.**
 
-## Current focus
-- Active: simplified single-implementation in the repo root
-- Legacy: `transformerlab/` multi-backend (Python/NumPy/PyTorch) kept for reference; de-emphasized due to type/import complexity
+## Philosophy
+- **Transparency over performance**: Show every operation explicitly
+- **Loops over vectorization**: Reveal mechanics rather than hide them
+- **Single implementation**: Avoid factories/backends that obscure understanding
+- **Educational errors**: Clear messages that teach, not frustrate
 
-## Quick start
-```bash
-uv run python simple_transformer.py        # Run demo
-uv run python -m pytest test_simplified.py # Run tests
-uv run streamlit run simple_demo.py        # Launch UI
-```
+## Architecture Evolution
+- **Current focus**: Simplified educational implementations
+- **Legacy**: `transformerlab/` multi-backend kept for reference but de-emphasized due to complexity
+- **Direction**: Moving toward maximum clarity for learning
 
-## Key files
-- `simple_transformer.py`: plain-Python transformer showing every operation
-- `simple_config.py`: minimal config with constraint explanations
-- `simple_demo.py`: Streamlit UI
-- `test_simplified.py`: 25-test validation suite
+## Development
+- **Python 3.13 only**: Modern syntax throughout
+- **uv managed**: Dependencies, formatting, linting unified
+- **Test-driven**: Emphasize mathematical correctness over speed
 
-## Design principles
-- Single implementation for clarity (no factories or backends)
-- Explicit loops over vectorization to reveal mechanics
-- Clear, educational error messages
-
-## Learning and visualization
-- Real-time UI to tweak architecture and training parameters
-- Attention maps, architecture diagrams, and training metrics
-
-## Testing guidance
-- Prefer `test_simplified.py`; the original `transformerlab/tests/` has import dependency issues
-- Tests emphasize mathematical correctness
-
-## Environment
-- Python 3.13
-- Managed with uv (formatting, linting, and dependencies)
+---
+*See `docs/` for specific commands, file layouts, and detailed guidance.*

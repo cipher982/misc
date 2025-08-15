@@ -1,2 +1,0 @@
-# misc
-scripts for learning
