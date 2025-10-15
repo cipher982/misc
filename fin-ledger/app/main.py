@@ -16,6 +16,14 @@ from .benefits import compute_credit_usage
 
 
 app = FastAPI(title="Fin Ledger", version="0.1.0")
+try:
+    # Attempt to mount built frontend if present
+    from .static_mount import mount_frontend
+
+    mount_frontend(app)
+except Exception:
+    # Non-fatal if frontend not built
+    pass
 
 
 class FeesResponse(BaseModel):
