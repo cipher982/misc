@@ -1,0 +1,24 @@
+issuer: capital_one
+product: venture_x
+window: calendar_year
+notes: |
+  Venture X travel credit posts via issuer portal purchases; verify merchant category codes.
+  Anniversary miles and lounge benefits are outside transactional credits but trackable.
+credits:
+  - key: travel_credit
+    name: Annual Travel Credit
+    cap: 300.00
+    currency: USD
+    match:
+      any:
+        - mcc: [3000-3299, 4511]
+        - memo_contains: ["Capital One Travel"]
+    window: calendar_year
+  - key: tsa_precheck
+    name: TSA PreCheck / Global Entry
+    cap: 100.00
+    currency: USD
+    match:
+      any:
+        - memo_contains: ["Global Entry", "TSA PreCheck"]
+    window: multi_year

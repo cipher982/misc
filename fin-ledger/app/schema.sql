@@ -1,0 +1,45 @@
+-- Views are created dynamically in Python when a DuckDB connection is opened.
+-- This file documents expected columns for reference.
+
+-- accounts.parquet expected columns:
+--   account_id TEXT PRIMARY KEY
+--   name TEXT
+--   official_name TEXT
+--   mask TEXT
+--   type TEXT
+--   subtype TEXT
+--   iso_currency_code TEXT
+
+-- transactions.parquet expected columns:
+--   transaction_id TEXT PRIMARY KEY
+--   account_id TEXT
+--   date TEXT (YYYY-MM-DD)
+--   authorized_date TEXT NULLABLE
+--   name TEXT
+--   merchant_name TEXT NULLABLE
+--   amount DOUBLE -- positive = outflow (charge), negative = inflow (refund)
+--   iso_currency_code TEXT
+--   category TEXT NULLABLE
+--   pfc_primary TEXT NULLABLE
+--   pfc_detailed TEXT NULLABLE
+--   pending BOOLEAN
+--   channel TEXT NULLABLE
+--   payment_channel TEXT NULLABLE
+--   mcc TEXT NULLABLE
+--   last_updated TEXT (ISO8601)
+
+-- statements.parquet expected columns (metadata only):
+--   account_id TEXT
+--   period TEXT (YYYY-MM)
+--   file_path TEXT (relative or absolute)
+--   byte_length INTEGER
+--   sha256 TEXT
+--   created_at TEXT (ISO8601)
+
+-- documents.parquet expected columns:
+--   document_id TEXT PRIMARY KEY (sha256 of title+content)
+--   title TEXT
+--   source TEXT (path or URL)
+--   content_hash TEXT (sha256 of content)
+--   content TEXT (unstructured text)
+--   created_at TEXT (ISO8601)
